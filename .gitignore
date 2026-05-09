@@ -48,3 +48,8 @@ htmlcov/
 
 # Traefik
 traefik/acme.json
+
+
+node_modules/
+dist/
+.env
