@@ -1,0 +1,33 @@
+## Dynamic routing configuration
+http:
+  routers:
+    backend:
+      rule: "Host(`api.localhost`)"
+      service: backend
+      entryPoints:
+        - web
+
+  services:
+    backend:
+      loadBalancer:
+        servers:
+          - url: "http://backend:8000"
+
+  middlewares:
+    cors-headers:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        accessControlAllowOriginList:
+          - "http://localhost:3000"
+          - "http://localhost:5173"
+        accessControlAllowHeaders:
+          - "Content-Type"
+          - "Authorization"
+        accessControlMaxAge: 100
+        addVaryHeader: true

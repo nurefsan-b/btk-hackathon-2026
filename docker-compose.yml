@@ -1,0 +1,155 @@
+services:
+  # ─── Traefik Reverse Proxy ──────────────────────────────
+  traefik:
+    image: traefik:v2.11
+    container_name: btk_traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+    command:
+      - "--providers.docker.version=1.41"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+    networks:
+      - btk_net
+
+  # ─── PostgreSQL ─────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: btk_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-btk_hackathon}
+      POSTGRES_USER: ${POSTGRES_USER:-btk_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-btk_secret}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-btk_user} -d ${POSTGRES_DB:-btk_hackathon}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - btk_net
+
+  # ─── Redis ──────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: btk_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - btk_net
+
+  # ─── FastAPI Backend ────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: btk_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=${APP_ENV:-development}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`api.localhost`)"
+      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    networks:
+      - btk_net
+
+  # ─── Celery Worker ──────────────────────────────────────
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: btk_celery_worker
+    restart: unless-stopped
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=4
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - btk_net
+
+  # ─── Celery Beat (Scheduler) ────────────────────────────
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: btk_celery_beat
+    restart: unless-stopped
+    command: celery -A app.worker.celery_app beat --loglevel=info --scheduler redbeat.RedBeatScheduler
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - btk_net
+
+  # ─── Flower (Celery Monitor) ────────────────────────────
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: btk_flower
+    restart: unless-stopped
+    command: celery -A app.worker.celery_app flower --port=5555
+    env_file:
+      - .env
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.flower.rule=Host(`flower.localhost`)"
+      - "traefik.http.routers.flower.entrypoints=web"
+      - "traefik.http.services.flower.loadbalancer.server.port=5555"
+    networks:
+      - btk_net
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  btk_net:
+    driver: bridge
