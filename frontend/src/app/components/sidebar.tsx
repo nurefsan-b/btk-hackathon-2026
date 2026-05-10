@@ -8,9 +8,9 @@ export function Sidebar() {
     const navItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
         { icon: Wallet, label: 'Portfolio', path: '/portfolio' },
-        { icon: TrendingUp, label: 'Analytics', path: '#' },
-        { icon: Sparkles, label: 'AI Insights', path: '#' },
-        { icon: Settings, label: 'Settings', path: '#' },
+        { icon: TrendingUp, label: 'Analytics', path: '/analytics' },
+        { icon: Sparkles, label: 'AI Insights', path: '/ai-insights' },
+        { icon: Settings, label: 'Settings', path: '/settings' },
     ];
 
     return (
