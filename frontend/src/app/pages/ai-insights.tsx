@@ -1,108 +1,103 @@
+import { useState, useEffect, useCallback } from 'react';
 import { BrainStatus } from '../components/ai-insights/brain-status';
 import { SentimentFeed } from '../components/ai-insights/sentiment-feed';
 import { ReasoningLog } from '../components/ai-insights/reasoning-log';
+import { ConnectionBanner } from '../components/connection-banner';
+import { useAuth } from '../lib/auth-context';
+import { getTradeHistory, type TradeResponse } from '../lib/api';
 
 export function AIInsights() {
-  const brainMetrics = {
-    articlesAnalyzed: 1245,
-    marketSentiment: 'Bullish',
-    isScanning: true,
-    activeSources: 127,
-  };
+    const { user } = useAuth();
+    const [trades, setTrades] = useState<TradeResponse[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
 
-  const sentimentItems = [
-    {
-      id: '1',
-      headline: 'Tech sector sees massive growth in Q3 earnings reports',
-      source: 'Financial Times',
-      timestamp: '15 min ago',
-      sentimentScore: 92,
-      aiConclusion: 'High probability of short-term gains in Tech Funds. Added to watchlist for next round-up investment.',
-    },
-    {
-      id: '2',
-      headline: 'Renewable energy companies exceed market expectations',
-      source: 'Bloomberg',
-      timestamp: '1 hour ago',
-      sentimentScore: 88,
-      aiConclusion: 'Strong positive sentiment. Renewable Energy Index showing sustained growth pattern. Recommended for portfolio allocation.',
-    },
-    {
-      id: '3',
-      headline: 'Global markets remain stable amid economic uncertainty',
-      source: 'Reuters',
-      timestamp: '2 hours ago',
-      sentimentScore: 65,
-      aiConclusion: 'Neutral sentiment. Maintaining current positions. No immediate action required.',
-    },
-    {
-      id: '4',
-      headline: 'E-commerce sector faces headwinds from supply chain issues',
-      source: 'Wall Street Journal',
-      timestamp: '3 hours ago',
-      sentimentScore: 38,
-      aiConclusion: 'Negative trend detected. Avoiding e-commerce allocations. Reallocating funds to more stable sectors.',
-    },
-    {
-      id: '5',
-      headline: 'AI and machine learning investments surge 40% year-over-year',
-      source: 'TechCrunch',
-      timestamp: '4 hours ago',
-      sentimentScore: 95,
-      aiConclusion: 'Exceptional positive sentiment. AI sector showing strong momentum. Increased allocation to technology funds.',
-    },
-  ];
+    const userId = user?.id || 'user_demo';
 
-  const reasoningSteps = [
-    {
-      step: 1,
-      title: 'Accumulated Spare Change',
-      description: 'Collected ₺340.00 from user transactions through intelligent round-up algorithm.',
-      status: 'completed',
-    },
-    {
-      step: 2,
-      title: 'Market Analysis',
-      description: 'Detected positive trend in Renewable Energy sector. Sentiment score: 88/100 across 45 articles.',
-      status: 'completed',
-    },
-    {
-      step: 3,
-      title: 'Risk Assessment',
-      description: 'Risk level (Medium) aligns with user preferences. Expected return: 8-12% annually.',
-      status: 'completed',
-    },
-    {
-      step: 4,
-      title: 'Decision Made',
-      description: 'Action: Prompted user to invest ₺340 in Green Energy Index Fund.',
-      status: 'active',
-    },
-  ];
+    const loadData = useCallback(async () => {
+        try {
+            const tradeData = await getTradeHistory(userId);
+            setTrades(tradeData);
+            setIsBackendOnline(true);
+        } catch (err) {
+            console.error('AI Insights load error:', err);
+            setIsBackendOnline(false);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [userId]);
 
-  return (
-    <main className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="mb-8">
-          <h1 className="text-3xl tracking-tight bg-gradient-to-r from-[#00ff88] to-[#8b5cf6] bg-clip-text text-transparent">
-            AI Intelligence Hub
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Real-time market sentiment analysis and autonomous reasoning logs
-          </p>
-        </div>
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
-        <BrainStatus metrics={brainMetrics} />
+    // ─── Data Mapping ──────────────────────────────────────────
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <div className="lg:col-span-3">
-            <SentimentFeed items={sentimentItems} />
-          </div>
-          <div className="lg:col-span-2">
-            <ReasoningLog steps={reasoningSteps} />
-          </div>
-        </div>
-      </div>
-    </main>
-  );
+    const brainMetrics = {
+        articlesAnalyzed: 1245 + (trades.length * 42), // Dynamic-ish
+        marketSentiment: trades.length > 0 ? (trades[0].action === 'buy' ? 'Bullish' : 'Neutral') : 'Scanning',
+        isScanning: true,
+        activeSources: 127,
+    };
+
+    // Use actual trade reasoning for the log if available
+    const reasoningSteps = trades.length > 0 
+        ? trades.slice(0, 1).flatMap(t => [
+            { step: 1, title: 'Accumulated Funds', description: `Pool of ₺${t.amount_invested.toFixed(2)} detected.`, status: 'completed' as const },
+            { step: 2, title: 'AI Analysis', description: `Sentiment analysis complete for ${t.asset} sector.`, status: 'completed' as const },
+            { step: 3, title: 'Risk Check', description: `Confidence score: ${(t.confidence_score * 100).toFixed(0)}%. Risk profile match.`, status: 'completed' as const },
+            { step: 4, title: 'Execution', description: `Action: ${t.action} ${t.asset}. Reasoning: ${t.reasoning}`, status: 'completed' as const },
+          ])
+        : MOCK_REASONING_STEPS;
+
+    if (isLoading) {
+        return (
+            <main className="flex-1 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 border-4 border-[#8b5cf6] border-t-transparent rounded-full animate-spin" />
+                    <p className="text-muted-foreground animate-pulse">Syncing AI Brain...</p>
+                </div>
+            </main>
+        );
+    }
+
+    return (
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10">
+            <div className="max-w-7xl mx-auto space-y-6">
+                <div className="mb-8">
+                    <h1 className="text-3xl tracking-tight bg-gradient-to-r from-[#00ff88] to-[#8b5cf6] bg-clip-text text-transparent">
+                        AI Intelligence Hub
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                        Real-time market sentiment analysis and autonomous reasoning logs
+                    </p>
+                </div>
+
+                <ConnectionBanner isOnline={isBackendOnline} />
+
+                <BrainStatus metrics={brainMetrics} />
+
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                    <div className="lg:col-span-3">
+                        <SentimentFeed items={SENTIMENT_ITEMS} />
+                    </div>
+                    <div className="lg:col-span-2">
+                        <ReasoningLog steps={reasoningSteps} />
+                    </div>
+                </div>
+            </div>
+        </main>
+    );
 }
+
+const MOCK_REASONING_STEPS = [
+    { step: 1, title: 'Accumulated Spare Change', description: 'Collected ₺340.00 from user transactions.', status: 'completed' as const },
+    { step: 2, title: 'Market Analysis', description: 'Detected positive trend in Renewable Energy. Sentiment: 88/100.', status: 'completed' as const },
+    { step: 3, title: 'Risk Assessment', description: 'Risk level aligns with preferences. Confidence: 92%.', status: 'completed' as const },
+    { step: 4, title: 'Decision Made', description: 'Action: Invest ₺340 in Green Energy Index Fund.', status: 'active' as const },
+];
+
+const SENTIMENT_ITEMS = [
+    { id: '1', headline: 'Tech sector sees massive growth in Q3 earnings reports', source: 'Financial Times', timestamp: '15 min ago', sentimentScore: 92, aiConclusion: 'High probability of short-term gains in Tech Funds.' },
+    { id: '2', headline: 'Renewable energy companies exceed market expectations', source: 'Bloomberg', timestamp: '1 hour ago', sentimentScore: 88, aiConclusion: 'Strong positive sentiment. Recommended for allocation.' },
+];

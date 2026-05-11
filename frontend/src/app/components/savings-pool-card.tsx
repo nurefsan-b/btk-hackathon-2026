@@ -3,9 +3,12 @@ import { motion } from 'motion/react';
 
 interface SavingsPoolCardProps {
     totalSavings: number;
+    totalInvested?: number;
 }
 
-export function SavingsPoolCard({ totalSavings }: SavingsPoolCardProps) {
+export function SavingsPoolCard({ totalSavings, totalInvested = 0 }: SavingsPoolCardProps) {
+    const allTime = totalSavings + totalInvested;
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -64,16 +67,16 @@ export function SavingsPoolCard({ totalSavings }: SavingsPoolCardProps) {
 
                 <div className="mt-6 grid grid-cols-3 gap-4">
                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-                        <p className="text-xs text-muted-foreground mb-1">This Week</p>
+                        <p className="text-xs text-muted-foreground mb-1">Pending</p>
                         <p className="text-lg text-[#00ff88]">₺{totalSavings.toFixed(2)}</p>
                     </div>
                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-                        <p className="text-xs text-muted-foreground mb-1">This Month</p>
-                        <p className="text-lg text-foreground">₺1,240.00</p>
+                        <p className="text-xs text-muted-foreground mb-1">Invested</p>
+                        <p className="text-lg text-foreground">₺{totalInvested.toFixed(2)}</p>
                     </div>
                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
                         <p className="text-xs text-muted-foreground mb-1">All Time</p>
-                        <p className="text-lg text-foreground">₺8,450.00</p>
+                        <p className="text-lg text-foreground">₺{allTime.toFixed(2)}</p>
                     </div>
                 </div>
             </div>

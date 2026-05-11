@@ -1,13 +1,14 @@
-import { Brain, TrendingUp, CheckCircle2, X, Sparkles } from 'lucide-react';
+import { Brain, TrendingUp, CheckCircle2, X, Sparkles, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface AIActionModalProps {
     amount: number;
     onApprove: () => void;
     onDismiss: () => void;
+    isLoading?: boolean;
 }
 
-export function AIActionModal({ amount, onApprove, onDismiss }: AIActionModalProps) {
+export function AIActionModal({ amount, onApprove, onDismiss, isLoading = false }: AIActionModalProps) {
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -44,7 +45,8 @@ export function AIActionModal({ amount, onApprove, onDismiss }: AIActionModalPro
                     </div>
                     <button
                         onClick={onDismiss}
-                        className="w-8 h-8 rounded-lg bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors"
+                        disabled={isLoading}
+                        className="w-8 h-8 rounded-lg bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -90,14 +92,25 @@ export function AIActionModal({ amount, onApprove, onDismiss }: AIActionModalPro
                 <div className="flex gap-3">
                     <button
                         onClick={onApprove}
-                        className="flex-1 bg-gradient-to-r from-[#00ff88] to-[#14b8a6] hover:from-[#00ff88]/90 hover:to-[#14b8a6]/90 text-[#0a0e27] px-6 py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-[#00ff88]/20 hover:shadow-xl hover:shadow-[#00ff88]/30 hover:scale-105"
+                        disabled={isLoading}
+                        className="flex-1 bg-gradient-to-r from-[#00ff88] to-[#14b8a6] hover:from-[#00ff88]/90 hover:to-[#14b8a6]/90 text-[#0a0e27] px-6 py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-[#00ff88]/20 hover:shadow-xl hover:shadow-[#00ff88]/30 hover:scale-105 disabled:opacity-70 disabled:hover:scale-100"
                     >
-                        <CheckCircle2 className="w-5 h-5" />
-                        <span>Yes, Invest Now</span>
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <span>Executing...</span>
+                            </>
+                        ) : (
+                            <>
+                                <CheckCircle2 className="w-5 h-5" />
+                                <span>Yes, Invest Now</span>
+                            </>
+                        )}
                     </button>
                     <button
                         onClick={onDismiss}
-                        className="px-6 py-3 rounded-xl bg-muted/50 hover:bg-muted border border-border/50 hover:border-border transition-all duration-200"
+                        disabled={isLoading}
+                        className="px-6 py-3 rounded-xl bg-muted/50 hover:bg-muted border border-border/50 hover:border-border transition-all duration-200 disabled:opacity-50"
                     >
                         Dismiss
                     </button>

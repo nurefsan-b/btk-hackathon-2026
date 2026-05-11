@@ -15,7 +15,9 @@ interface TransactionsListProps {
     transactions: Transaction[];
 }
 
-const categoryIcons: Record<string, any> = {
+import { type ComponentType } from 'react';
+
+const categoryIcons: Record<string, ComponentType<{ className?: string }>> = {
     'Food & Drink': Coffee,
     Transportation: Train,
     Entertainment: Video,
