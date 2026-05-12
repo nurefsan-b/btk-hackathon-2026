@@ -6,7 +6,7 @@
  * during local Docker development Traefik routes everything through port 80.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:80";
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://api.localhost";
 
 // ─── Helpers ────────────────────────────────────────────────
 

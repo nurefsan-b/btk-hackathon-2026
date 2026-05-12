@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LayoutDashboard, TrendingUp, Wallet, Settings, Sparkles, Menu, X, User } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../lib/auth-context';
 

@@ -53,3 +53,5 @@ traefik/acme.json
 node_modules/
 dist/
 .env
+
+/LIVE_READINESS.md

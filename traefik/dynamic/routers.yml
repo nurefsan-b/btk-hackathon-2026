@@ -6,12 +6,21 @@ http:
       service: backend
       entryPoints:
         - web
+    frontend:
+      rule: "Host(`frontend.localhost`)"
+      service: frontend
+      entryPoints:
+        - web
 
   services:
     backend:
       loadBalancer:
         servers:
           - url: "http://backend:8000"
+    frontend:
+      loadBalancer:
+        servers:
+          - url: "http://frontend:5173"
 
   middlewares:
     cors-headers:
