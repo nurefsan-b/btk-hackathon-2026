@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { User, Mail, Lock, Eye, EyeOff, Sparkles, TrendingUp, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../lib/auth-context';
+import { getGoogleLoginUrl } from '../lib/api';
 
 export function SignUp() {
   const navigate = useNavigate();
@@ -12,11 +13,25 @@ export function SignUp() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [riskProfile, setRiskProfile] = useState<'low' | 'medium' | 'high'>('medium');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    signup(fullName, email, password, riskProfile);
-    navigate('/dashboard');
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await signup(fullName, email, password, riskProfile);
+      navigate('/dashboard');
+    } catch {
+      setError('Could not create this account. Try another email.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = getGoogleLoginUrl();
   };
 
   const features = [
@@ -122,6 +137,11 @@ export function SignUp() {
               </p>
 
               <form onSubmit={handleSignUp} className="space-y-5">
+                {error && (
+                  <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    {error}
+                  </div>
+                )}
                 {/* Full Name Input */}
                 <div>
                   <label htmlFor="fullName" className="block text-sm mb-2">
@@ -216,9 +236,10 @@ export function SignUp() {
                 {/* Create Account Button */}
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full bg-gradient-to-r from-[#00ff88] to-[#14b8a6] hover:from-[#00ff88]/90 hover:to-[#14b8a6]/90 text-[#0a0e27] px-6 py-3 rounded-lg transition-all duration-200 shadow-lg shadow-[#00ff88]/20 hover:shadow-xl hover:shadow-[#00ff88]/30"
                 >
-                  Create Account
+                  {isSubmitting ? 'Creating Account...' : 'Create Account'}
                 </button>
 
                 {/* Divider */}
@@ -234,6 +255,7 @@ export function SignUp() {
                 {/* Google Button */}
                 <button
                   type="button"
+                  onClick={handleGoogleLogin}
                   className="w-full bg-transparent border border-border hover:bg-muted/20 px-6 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">

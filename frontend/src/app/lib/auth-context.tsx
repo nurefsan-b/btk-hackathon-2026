@@ -1,4 +1,11 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import {
+  ApiUser,
+  getCurrentUser,
+  loginWithPassword,
+  registerWithPassword,
+  setAccessToken,
+} from './api';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -13,8 +20,9 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => void;
-  signup: (fullName: string, email: string, password: string, riskProfile: 'low' | 'medium' | 'high') => void;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (fullName: string, email: string, password: string, riskProfile: 'low' | 'medium' | 'high') => Promise<void>;
+  completeTokenLogin: (token: string) => Promise<void>;
   logout: () => void;
   updateProfile: (updates: Partial<Pick<User, 'fullName' | 'email' | 'riskProfile'>>) => void;
 }
@@ -42,37 +50,34 @@ function saveUser(user: User | null) {
   }
 }
 
+function mapApiUser(user: ApiUser): User {
+  return {
+    id: user.id,
+    fullName: user.full_name,
+    email: user.email,
+    riskProfile: user.risk_profile,
+    createdAt: user.created_at,
+  };
+}
+
 // ─── Provider ───────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(loadUser);
 
-  const login = useCallback((email: string, _password: string) => {
-    // In a real app this would call the backend auth endpoint.
-    // For the hackathon demo we create/restore a local user.
-    const existing = loadUser();
-    const u: User = existing && existing.email === email
-      ? existing
-      : {
-          id: `user_${email.split('@')[0]}`,
-          fullName: email.split('@')[0].replace(/[._]/g, ' '),
-          email,
-          riskProfile: 'medium',
-          createdAt: new Date().toISOString(),
-        };
+  const login = useCallback(async (email: string, password: string) => {
+    const auth = await loginWithPassword(email, password);
+    setAccessToken(auth.access_token);
+    const u = mapApiUser(auth.user);
     saveUser(u);
     setUser(u);
   }, []);
 
   const signup = useCallback(
-    (fullName: string, email: string, _password: string, riskProfile: 'low' | 'medium' | 'high') => {
-      const u: User = {
-        id: `user_${email.split('@')[0]}`,
-        fullName,
-        email,
-        riskProfile,
-        createdAt: new Date().toISOString(),
-      };
+    async (fullName: string, email: string, password: string, riskProfile: 'low' | 'medium' | 'high') => {
+      const auth = await registerWithPassword(fullName, email, password, riskProfile);
+      setAccessToken(auth.access_token);
+      const u = mapApiUser(auth.user);
       saveUser(u);
       setUser(u);
     },
@@ -80,8 +85,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
+    setAccessToken(null);
     saveUser(null);
     setUser(null);
+  }, []);
+
+  const completeTokenLogin = useCallback(async (token: string) => {
+    setAccessToken(token);
+    const apiUser = await getCurrentUser();
+    const u = mapApiUser(apiUser);
+    saveUser(u);
+    setUser(u);
   }, []);
 
   const updateProfile = useCallback(
@@ -97,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, completeTokenLogin, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

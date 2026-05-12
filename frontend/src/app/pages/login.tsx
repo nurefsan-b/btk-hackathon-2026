@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, Sparkles, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../lib/auth-context';
+import { getGoogleLoginUrl } from '../lib/api';
 
 export function Login() {
     const navigate = useNavigate();
@@ -11,11 +12,25 @@ export function Login() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        login(email, password);
-        navigate('/dashboard');
+        setError(null);
+        setIsSubmitting(true);
+        try {
+            await login(email, password);
+            navigate('/dashboard');
+        } catch {
+            setError('Email or password is invalid.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleGoogleLogin = () => {
+        window.location.href = getGoogleLoginUrl();
     };
 
     return (
@@ -49,6 +64,11 @@ export function Login() {
                             </p>
 
                             <form onSubmit={handleLogin} className="space-y-5">
+                                {error && (
+                                    <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                                        {error}
+                                    </div>
+                                )}
                                 {/* Email Input */}
                                 <div>
                                     <label htmlFor="email" className="block text-sm mb-2">
@@ -116,9 +136,10 @@ export function Login() {
                                 {/* Primary Button */}
                                 <button
                                     type="submit"
+                                    disabled={isSubmitting}
                                     className="w-full bg-gradient-to-r from-[#00ff88] to-[#14b8a6] hover:from-[#00ff88]/90 hover:to-[#14b8a6]/90 text-[#0a0e27] px-6 py-3 rounded-lg transition-all duration-200 shadow-lg shadow-[#00ff88]/20 hover:shadow-xl hover:shadow-[#00ff88]/30"
                                 >
-                                    Access AI Dashboard
+                                    {isSubmitting ? 'Signing in...' : 'Access AI Dashboard'}
                                 </button>
 
                                 {/* Divider */}
@@ -134,6 +155,7 @@ export function Login() {
                                 {/* Google Button */}
                                 <button
                                     type="button"
+                                    onClick={handleGoogleLogin}
                                     className="w-full bg-transparent border border-border hover:bg-muted/20 px-6 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
                                 >
                                     <svg className="w-5 h-5" viewBox="0 0 24 24">
