@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     google_api_key: str = Field(..., description="Google Gemini API key")
     gemini_model: str = "gemini-1.5-pro"
 
+    # ── Auth ───────────────────────────────────────────
+    access_token_expire_minutes: int = 60 * 24
+
     # ── News API ───────────────────────────────────────
     news_api_key: str = ""
     news_api_url: str = "https://newsapi.org/v2/everything"

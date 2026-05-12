@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router';
 import { AuthProvider, useAuth } from './lib/auth-context';
 import { Sidebar } from './components/sidebar';
 import { Dashboard } from './pages/dashboard';
@@ -51,7 +51,6 @@ export default function App() {
                             </GuestRoute>
                         }
                     />
-
                     {/* ── Protected app routes ───────────── */}
                     <Route element={<ProtectedLayout />}>
                         <Route path="/dashboard" element={<Dashboard />} />

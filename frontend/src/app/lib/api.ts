@@ -7,13 +7,19 @@
  */
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://api.localhost";
+const TOKEN_KEY = "kusurat_ai_access_token";
 
 // ─── Helpers ────────────────────────────────────────────────
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}/api/v1${path}`;
+  const token = getAccessToken();
   const res = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options?.headers,
+    },
     ...options,
   });
   if (!res.ok) {
@@ -91,6 +97,34 @@ export interface TriggerTradeResult {
   status: string;
 }
 
+export interface ApiUser {
+  id: string;
+  email: string;
+  full_name: string;
+  risk_profile: "low" | "medium" | "high";
+  auth_provider: string;
+  avatar_url: string | null;
+  created_at: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: "bearer";
+  user: ApiUser;
+}
+
+export function getAccessToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setAccessToken(token: string | null) {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+}
+
 // ─── API Functions ──────────────────────────────────────────
 
 /** POST /transactions/ — simulate a bank purchase */
@@ -99,6 +133,34 @@ export function createTransaction(payload: TransactionPayload) {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export function loginWithPassword(email: string, password: string) {
+  return request<AuthResponse>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export function registerWithPassword(
+  fullName: string,
+  email: string,
+  password: string,
+  riskProfile: "low" | "medium" | "high",
+) {
+  return request<AuthResponse>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify({
+      full_name: fullName,
+      email,
+      password,
+      risk_profile: riskProfile,
+    }),
+  });
+}
+
+export function getCurrentUser() {
+  return request<ApiUser>("/auth/me");
 }
 
 /** GET /transactions/{userId} — fetch recent transactions */
