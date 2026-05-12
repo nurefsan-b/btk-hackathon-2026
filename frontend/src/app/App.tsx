@@ -8,6 +8,7 @@ import { AIInsights } from './pages/ai-insights';
 import { Settings } from './pages/settings';
 import { Login } from './pages/login';
 import { SignUp } from './pages/signup';
+import { AuthCallback } from './pages/auth-callback';
 
 // ── Protected Layout (sidebar + content) ────────────────────
 function ProtectedLayout() {
@@ -51,6 +52,8 @@ export default function App() {
                             </GuestRoute>
                         }
                     />
+                    <Route path="/auth/callback" element={<AuthCallback />} />
+
                     {/* ── Protected app routes ───────────── */}
                     <Route element={<ProtectedLayout />}>
                         <Route path="/dashboard" element={<Dashboard />} />

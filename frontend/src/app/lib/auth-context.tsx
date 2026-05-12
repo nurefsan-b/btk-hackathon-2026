@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import {
   ApiUser,
+  getCurrentUser,
   loginWithPassword,
   registerWithPassword,
   setAccessToken,
@@ -21,6 +22,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (fullName: string, email: string, password: string, riskProfile: 'low' | 'medium' | 'high') => Promise<void>;
+  completeTokenLogin: (token: string) => Promise<void>;
   logout: () => void;
   updateProfile: (updates: Partial<Pick<User, 'fullName' | 'email' | 'riskProfile'>>) => void;
 }
@@ -88,6 +90,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const completeTokenLogin = useCallback(async (token: string) => {
+    setAccessToken(token);
+    const apiUser = await getCurrentUser();
+    const u = mapApiUser(apiUser);
+    saveUser(u);
+    setUser(u);
+  }, []);
+
   const updateProfile = useCallback(
     (updates: Partial<Pick<User, 'fullName' | 'email' | 'riskProfile'>>) => {
       setUser((prev) => {
@@ -101,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, completeTokenLogin, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, Sparkles, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../lib/auth-context';
+import { getGoogleLoginUrl } from '../lib/api';
 
 export function Login() {
     const navigate = useNavigate();
@@ -26,6 +27,10 @@ export function Login() {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleGoogleLogin = () => {
+        window.location.href = getGoogleLoginUrl();
     };
 
     return (
@@ -150,6 +155,7 @@ export function Login() {
                                 {/* Google Button */}
                                 <button
                                     type="button"
+                                    onClick={handleGoogleLogin}
                                     className="w-full bg-transparent border border-border hover:bg-muted/20 px-6 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
                                 >
                                     <svg className="w-5 h-5" viewBox="0 0 24 24">

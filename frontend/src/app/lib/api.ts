@@ -125,6 +125,10 @@ export function setAccessToken(token: string | null) {
   }
 }
 
+export function getGoogleLoginUrl(): string {
+  return `${API_BASE}/api/v1/auth/google/login`;
+}
+
 // ─── API Functions ──────────────────────────────────────────
 
 /** POST /transactions/ — simulate a bank purchase */

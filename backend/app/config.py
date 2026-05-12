@@ -42,7 +42,11 @@ class Settings(BaseSettings):
     google_api_key: str = Field(..., description="Google Gemini API key")
     gemini_model: str = "gemini-1.5-pro"
 
-    # ── Auth ───────────────────────────────────────────
+    # ── Auth / Google OAuth ────────────────────────────
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_oauth_redirect_uri: str = "http://localhost:8000/api/v1/auth/google/callback"
+    frontend_url: str = "http://localhost:5173"
     access_token_expire_minutes: int = 60 * 24
 
     # ── News API ───────────────────────────────────────
