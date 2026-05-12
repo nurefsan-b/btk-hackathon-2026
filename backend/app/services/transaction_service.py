@@ -6,6 +6,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.transaction import BankTransaction
+from app.repositories.saving_entry_repo import SavingEntryRepository
 from app.repositories.transaction_repo import TransactionRepository
 from app.schemas.transaction import TransactionCreate
 
@@ -20,6 +21,7 @@ class TransactionService:
 
     def __init__(self, session: AsyncSession) -> None:
         self._repo = TransactionRepository(session)
+        self._saving_entries = SavingEntryRepository(session)
 
     @staticmethod
     def calculate_round_up(amount: float, base: float = 10.0) -> tuple[float, float]:
@@ -42,7 +44,15 @@ class TransactionService:
             amount=data.amount,
             round_up=diff,
         )
-        return await self._repo.create(data, rounded, diff)
+        tx = await self._repo.create(data, rounded, diff)
+        await self._saving_entries.create_round_up(
+            user_id=data.user_id,
+            amount=diff,
+            currency=data.currency,
+            transaction_id=tx.id,
+            description=f"Round-up from {data.merchant or data.description or 'transaction'}",
+        )
+        return tx
 
     async def get_user_transactions(
         self, user_id: str, limit: int = 50

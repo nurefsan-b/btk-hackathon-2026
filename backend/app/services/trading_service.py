@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.schemas import TradeDecision
 from app.db.models.trade import Trade, TradeAction, TradeStatus
+from app.repositories.saving_entry_repo import SavingEntryRepository
 from app.repositories.saving_repo import SavingRepository
 from app.repositories.trade_repo import TradeRepository
 
@@ -26,6 +27,7 @@ class TradingService:
     def __init__(self, session: AsyncSession) -> None:
         self._trade_repo = TradeRepository(session)
         self._saving_repo = SavingRepository(session)
+        self._saving_entries = SavingEntryRepository(session)
 
     async def trigger_trade(
         self, user_id: str, saving_id: uuid.UUID | None = None
@@ -89,6 +91,13 @@ class TradingService:
         # Execute (mock/simulated in hackathon scope)
         await self._trade_repo.mark_executed(
             trade.id, mock_price, TradeStatus.SIMULATED
+        )
+        await self._saving_entries.create_investment_debit(
+            user_id=user_id,
+            amount=amount,
+            trade_id=trade.id,
+            saving_id=saving_id,
+            description=f"Simulated investment in {decision.asset}",
         )
         log.info("trade.simulated", trade_id=str(trade.id), price=mock_price)
 

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models.saving import SavingStatus, WeeklySaving
+from app.db.models.saving import WeeklySaving
+from app.db.models.saving_entry import SavingEntryType
+from app.repositories.saving_entry_repo import SavingEntryRepository
 from app.repositories.saving_repo import SavingRepository
 from app.repositories.transaction_repo import TransactionRepository
 from app.schemas.saving import SavingsSummary
@@ -18,12 +20,23 @@ class SavingService:
 
     def __init__(self, session: AsyncSession) -> None:
         self._saving_repo = SavingRepository(session)
+        self._entry_repo = SavingEntryRepository(session)
         self._tx_repo = TransactionRepository(session)
 
     async def get_user_summary(self, user_id: str) -> SavingsSummary:
         savings = await self._saving_repo.list_by_user(user_id)
-        pending = sum(s.total_amount for s in savings if s.status == SavingStatus.PENDING)
-        invested = sum(s.total_amount for s in savings if s.status == SavingStatus.INVESTED)
+        entries = await self._entry_repo.list_by_user(user_id)
+        collected = sum(
+            float(entry.amount)
+            for entry in entries
+            if entry.entry_type == SavingEntryType.ROUND_UP_COLLECTED
+        )
+        invested = sum(
+            float(entry.amount)
+            for entry in entries
+            if entry.entry_type == SavingEntryType.INVESTMENT_DEBIT
+        )
+        pending = max(collected - invested, 0)
         return SavingsSummary(
             user_id=user_id,
             total_pending=round(pending, 2),
@@ -42,7 +55,7 @@ class SavingService:
             log.info("accumulate_weekly.no_diff", user_id=user_id)
             return None
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         week_start = now - timedelta(days=7)
         saving = await self._saving_repo.create(
             user_id=user_id,

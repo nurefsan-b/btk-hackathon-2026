@@ -59,6 +59,24 @@ class TestTransactionAPI:
         assert response.status_code == 200
         assert len(response.json()) >= 1
 
+    async def test_round_up_persists_in_savings_summary(self, client: AsyncClient):
+        response = await client.post(
+            "/api/v1/transactions/",
+            json={
+                "user_id": "test_user_persist",
+                "amount": 135.0,
+                "merchant": "Starbucks",
+                "currency": "TRY",
+            },
+        )
+        assert response.status_code == 201
+        assert response.json()["round_up_diff"] == pytest.approx(5.0, abs=0.01)
+
+        summary = await client.get("/api/v1/savings/test_user_persist")
+
+        assert summary.status_code == 200
+        assert summary.json()["total_pending"] == pytest.approx(5.0, abs=0.01)
+
     async def test_health_check(self, client: AsyncClient):
         response = await client.get("/health")
         assert response.status_code == 200
