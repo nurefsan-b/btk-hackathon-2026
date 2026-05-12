@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.saving_entry import SavingEntry, SavingEntryType
@@ -53,7 +53,7 @@ class SavingEntryRepository:
         entry = SavingEntry(
             user_id=user_id,
             entry_type=SavingEntryType.INVESTMENT_DEBIT,
-            amount=round(amount, 2),
+            amount=-round(amount, 2),
             currency=currency,
             trade_id=trade_id,
             saving_id=saving_id,
@@ -71,3 +71,11 @@ class SavingEntryRepository:
             .order_by(SavingEntry.created_at.desc())
         )
         return list(result.scalars().all())
+
+    async def get_pending_balance(self, user_id: str) -> float:
+        result = await self._session.execute(
+            select(func.coalesce(func.sum(SavingEntry.amount), 0)).where(
+                SavingEntry.user_id == user_id
+            )
+        )
+        return round(max(float(result.scalar_one()), 0.0), 2)

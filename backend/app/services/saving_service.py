@@ -26,20 +26,15 @@ class SavingService:
     async def get_user_summary(self, user_id: str) -> SavingsSummary:
         savings = await self._saving_repo.list_by_user(user_id)
         entries = await self._entry_repo.list_by_user(user_id)
-        collected = sum(
-            float(entry.amount)
-            for entry in entries
-            if entry.entry_type == SavingEntryType.ROUND_UP_COLLECTED
-        )
         invested = sum(
-            float(entry.amount)
+            abs(float(entry.amount))
             for entry in entries
             if entry.entry_type == SavingEntryType.INVESTMENT_DEBIT
         )
-        pending = max(collected - invested, 0)
+        pending = sum(float(entry.amount) for entry in entries)
         return SavingsSummary(
             user_id=user_id,
-            total_pending=round(pending, 2),
+            total_pending=round(max(pending, 0), 2),
             total_invested=round(invested, 2),
             savings=savings,  # type: ignore[arg-type]
         )

@@ -1,4 +1,4 @@
-import { ArrowRight, Coffee, Train, Video, ShoppingBag, UtensilsCrossed } from 'lucide-react';
+import { ArrowRight, Coffee, Train, Video, ShoppingBag, UtensilsCrossed, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface Transaction {
@@ -9,6 +9,9 @@ interface Transaction {
     extractedAmount: number;
     date: string;
     category: string;
+    type?: 'purchase' | 'investment';
+    asset?: string;
+    status?: string;
 }
 
 interface TransactionsListProps {
@@ -23,6 +26,7 @@ const categoryIcons: Record<string, ComponentType<{ className?: string }>> = {
     Entertainment: Video,
     Shopping: ShoppingBag,
     Simulated: UtensilsCrossed,
+    Investment: TrendingUp,
 };
 
 export function TransactionsList({ transactions }: TransactionsListProps) {
@@ -58,19 +62,32 @@ export function TransactionsList({ transactions }: TransactionsListProps) {
 
                             <div className="flex items-center gap-3">
                                 <div className="text-right">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm text-muted-foreground line-through">
-                                            ₺{transaction.originalAmount.toFixed(2)}
-                                        </span>
-                                        <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                                        <span className="text-sm">
-                                            ₺{transaction.roundedAmount.toFixed(2)}
-                                        </span>
-                                    </div>
-                                    <div className="text-xs text-[#00ff88] mt-1 flex items-center justify-end gap-1">
-                                        <span>+₺{transaction.extractedAmount.toFixed(2)}</span>
-                                        <span className="text-muted-foreground">saved</span>
-                                    </div>
+                                    {transaction.type === 'investment' ? (
+                                        <>
+                                            <div className="text-sm text-[#00ff88]">
+                                                ₺{transaction.originalAmount.toFixed(2)}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground mt-1">
+                                                {transaction.asset} · {transaction.status}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm text-muted-foreground line-through">
+                                                    ₺{transaction.originalAmount.toFixed(2)}
+                                                </span>
+                                                <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                                                <span className="text-sm">
+                                                    ₺{transaction.roundedAmount.toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <div className="text-xs text-[#00ff88] mt-1 flex items-center justify-end gap-1">
+                                                <span>+₺{transaction.extractedAmount.toFixed(2)}</span>
+                                                <span className="text-muted-foreground">saved</span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </motion.div>

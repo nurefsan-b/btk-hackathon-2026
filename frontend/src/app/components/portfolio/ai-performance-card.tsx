@@ -47,6 +47,11 @@ export function AIPerformanceCard({ decisions }: AIPerformanceCardProps) {
         </div>
 
         <div className="space-y-4">
+          {decisions.length === 0 && (
+            <div className="rounded-xl border border-border/50 bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+              No AI investment decisions yet.
+            </div>
+          )}
           {decisions.map((decision, index) => (
             <motion.div
               key={decision.id}

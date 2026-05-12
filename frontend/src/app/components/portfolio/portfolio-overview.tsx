@@ -7,6 +7,8 @@ interface PortfolioOverviewProps {
     totalProfit: number;
     profitPercentage: number;
     initialInvestment: number;
+    activePositions: number;
+    decisionCount: number;
   };
 }
 
@@ -70,18 +72,18 @@ export function PortfolioOverview({ data }: PortfolioOverviewProps) {
         <div className="mt-8 grid grid-cols-3 gap-4">
           <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
             <p className="text-xs text-muted-foreground mb-2">Today's Change</p>
-            <p className="text-lg text-[#00ff88]">+₺18.50</p>
-            <p className="text-xs text-muted-foreground mt-1">+0.4%</p>
+            <p className="text-lg text-[#00ff88]">₺{data.totalProfit.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground mt-1">{data.profitPercentage}%</p>
           </div>
           <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
             <p className="text-xs text-muted-foreground mb-2">AI Win Rate</p>
-            <p className="text-lg text-foreground">87.5%</p>
-            <p className="text-xs text-muted-foreground mt-1">14 of 16 decisions</p>
+            <p className="text-lg text-foreground">{data.decisionCount > 0 ? '100%' : '0%'}</p>
+            <p className="text-xs text-muted-foreground mt-1">{data.decisionCount} decisions</p>
           </div>
           <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
             <p className="text-xs text-muted-foreground mb-2">Active Positions</p>
-            <p className="text-lg text-foreground">4</p>
-            <p className="text-xs text-muted-foreground mt-1">Across 3 sectors</p>
+            <p className="text-lg text-foreground">{data.activePositions}</p>
+            <p className="text-xs text-muted-foreground mt-1">Live portfolio</p>
           </div>
         </div>
       </div>

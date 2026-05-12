@@ -45,26 +45,32 @@ export function AssetAllocationChart({ allocation }: AssetAllocationChartProps) 
         </div>
       </div>
 
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={allocation}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={90}
-              paddingAngle={5}
-              dataKey="value"
-            >
-              {allocation.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+      {allocation.length === 0 ? (
+        <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">
+          No allocation data yet.
+        </div>
+      ) : (
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={allocation}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={90}
+                paddingAngle={5}
+                dataKey="value"
+              >
+                {allocation.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       <div className="mt-4 space-y-3">
         {allocation.map((item, index) => (

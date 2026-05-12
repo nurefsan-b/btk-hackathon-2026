@@ -8,7 +8,7 @@ interface Holding {
   currentValue: number;
   return: string;
   aiOutlook: string;
-  shares: number;
+  shares: string;
 }
 
 interface ActiveHoldingsTableProps {
@@ -46,6 +46,13 @@ export function ActiveHoldingsTable({ holdings }: ActiveHoldingsTableProps) {
             </tr>
           </thead>
           <tbody>
+            {holdings.length === 0 && (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                  No active investment positions yet.
+                </td>
+              </tr>
+            )}
             {holdings.map((holding, index) => (
               <motion.tr
                 key={holding.id}

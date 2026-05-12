@@ -9,6 +9,7 @@ import { useAuth } from '../lib/auth-context';
 import {
     getTradeHistory,
     getSavingsSummary,
+    triggerAITrade,
     type TradeResponse,
     type SavingsSummary,
 } from '../lib/api';
@@ -45,28 +46,36 @@ export function Portfolio() {
 
     // ─── Data Mapping ──────────────────────────────────────────
 
+    const visibleTrades = trades.filter(t => ['pending', 'executed', 'simulated'].includes(t.status));
+    const activeTrades = trades.filter(t => ['executed', 'simulated'].includes(t.status));
+    const reservedWithoutTrade = Math.max(
+        (savings?.total_invested || 0) - visibleTrades.reduce((acc, t) => acc + t.amount_invested, 0),
+        0,
+    );
     const totalInvested = savings?.total_invested || 0;
     const totalProfit = trades.reduce((acc, t) => acc + (t.profit_loss || 0), 0);
     const totalValue = totalInvested + totalProfit;
     const profitPercentage = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
 
     const portfolioOverviewData = {
-        totalValue: totalValue || 4250.0, // Fallback to mock if zero
-        totalProfit: totalProfit || 465.5,
-        profitPercentage: parseFloat(profitPercentage.toFixed(1)) || 12.4,
-        initialInvestment: totalInvested || 3784.5,
+        totalValue,
+        totalProfit,
+        profitPercentage: parseFloat(profitPercentage.toFixed(1)),
+        initialInvestment: totalInvested,
+        activePositions: activeTrades.length,
+        decisionCount: visibleTrades.length,
     };
 
-    const aiDecisionsMapped = trades.map(t => ({
+    const aiDecisionsMapped = visibleTrades.map(t => ({
         id: t.id,
         amount: t.amount_invested,
         asset: t.asset,
         date: t.created_at.split('T')[0],
         reason: t.reasoning.length > 30 ? t.reasoning.substring(0, 30) + '...' : t.reasoning,
-        performance: t.profit_loss ? (t.profit_loss > 0 ? `+${((t.profit_loss/t.amount_invested)*100).toFixed(1)}%` : `${((t.profit_loss/t.amount_invested)*100).toFixed(1)}%`) : 'N/A',
+        performance: t.profit_loss ? (t.profit_loss > 0 ? `+${((t.profit_loss/t.amount_invested)*100).toFixed(1)}%` : `${((t.profit_loss/t.amount_invested)*100).toFixed(1)}%`) : t.status,
     }));
 
-    const activeHoldingsMapped = trades.filter(t => t.status === 'executed').map(t => ({
+    const activeHoldingsMapped = activeTrades.map(t => ({
         id: t.id,
         name: t.asset,
         investedAmount: t.amount_invested,
@@ -75,17 +84,32 @@ export function Portfolio() {
         aiOutlook: 'Positive',
         shares: (t.amount_invested / (t.executed_price || 100)).toFixed(2),
     }));
+    if (reservedWithoutTrade > 0) {
+        activeHoldingsMapped.unshift({
+            id: 'reserved-ai-allocation',
+            name: 'AI allocation pending',
+            investedAmount: reservedWithoutTrade,
+            currentValue: reservedWithoutTrade,
+            return: 'pending',
+            aiOutlook: 'Holding',
+            shares: '-',
+        });
+    }
 
     // Asset allocation logic (simplified)
     const assetTotals: Record<string, number> = {};
-    trades.forEach(t => {
+    activeTrades.forEach(t => {
         assetTotals[t.asset] = (assetTotals[t.asset] || 0) + t.amount_invested;
     });
+    if (reservedWithoutTrade > 0) {
+        assetTotals['AI allocation pending'] = reservedWithoutTrade;
+    }
+    const allocatedTotal = Object.values(assetTotals).reduce((acc, amount) => acc + amount, 0);
     
     const assetAllocationMapped = Object.entries(assetTotals).map(([name, amount], idx) => ({
         name,
         amount,
-        value: totalInvested > 0 ? Math.round((amount / totalInvested) * 100) : 25,
+        value: allocatedTotal > 0 ? Math.round((amount / allocatedTotal) * 100) : 0,
         color: ['#00ff88', '#8b5cf6', '#6366f1', '#14b8a6'][idx % 4],
     }));
 
@@ -122,9 +146,9 @@ export function Portfolio() {
                         // In portfolio page, we just trigger the trade if they click
                         // (Usually they'd do it from dashboard but consistency helps)
                         try {
-                            const { triggerAITrade } = await import('../lib/api');
                             await triggerAITrade(userId);
-                            loadData();
+                            await loadData();
+                            window.setTimeout(loadData, 2500);
                         } catch (e) {
                             console.error(e);
                         }
@@ -133,31 +157,15 @@ export function Portfolio() {
 
                 <PortfolioOverview data={portfolioOverviewData} />
 
-                <AIPerformanceCard decisions={aiDecisionsMapped.length > 0 ? aiDecisionsMapped : MOCK_DECISIONS} />
+                <AIPerformanceCard decisions={aiDecisionsMapped} />
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <AssetAllocationChart allocation={assetAllocationMapped.length > 0 ? assetAllocationMapped : MOCK_ALLOCATION} />
+                    <AssetAllocationChart allocation={assetAllocationMapped} />
                     <div className="lg:col-span-2">
-                        <ActiveHoldingsTable holdings={activeHoldingsMapped.length > 0 ? activeHoldingsMapped : MOCK_HOLDINGS} />
+                        <ActiveHoldingsTable holdings={activeHoldingsMapped} />
                     </div>
                 </div>
             </div>
         </main>
     );
 }
-
-const MOCK_DECISIONS = [
-    { id: '1', amount: 340.0, asset: 'X Technology Fund', date: '2026-05-08', reason: 'Positive Tech Sentiment', performance: '+8.2%' },
-    { id: '2', amount: 280.0, asset: 'Green Energy Index', date: '2026-05-01', reason: 'Renewable Energy Surge', performance: '+15.7%' },
-];
-
-const MOCK_ALLOCATION = [
-    { name: 'Technology Funds', value: 60, amount: 2550.0, color: '#00ff88' },
-    { name: 'Renewable Energy', value: 30, amount: 1275.0, color: '#8b5cf6' },
-    { name: 'Healthcare', value: 10, amount: 425.0, color: '#6366f1' },
-];
-
-const MOCK_HOLDINGS = [
-    { id: '1', name: 'X Technology Fund', investedAmount: 650.0, currentValue: 704.3, return: '+8.4%', aiOutlook: 'Positive', shares: '26.40' },
-    { id: '2', name: 'Green Energy Index', investedAmount: 1230.0, currentValue: 1423.41, return: '+15.7%', aiOutlook: 'Holding', shares: '41.20' },
-];

@@ -43,6 +43,15 @@ class TradingService:
             saving = await self._saving_repo.get_by_id(saving_id)
             if saving:
                 amount = float(saving.total_amount)
+        else:
+            amount = await self._saving_entries.get_pending_balance(user_id)
+
+        await self._saving_entries.create_investment_debit(
+            user_id=user_id,
+            amount=amount,
+            saving_id=saving_id,
+            description="Reserved for AI investment",
+        )
 
         task = trigger_ai_trade.delay(
             user_id=user_id,
@@ -59,6 +68,7 @@ class TradingService:
         amount: float,
         saving_id: uuid.UUID | None = None,
         mock_price: float = 100.0,
+        debit_savings: bool = True,
     ) -> Trade:
         """
         Persist a TradeDecision returned by the AI agent.
@@ -67,6 +77,10 @@ class TradingService:
         Flow:
           Celery task → ai/agent.py (returns TradeDecision) → this method (writes DB)
         """
+        if debit_savings:
+            pending_balance = await self._saving_entries.get_pending_balance(user_id)
+            amount = pending_balance if amount <= 0 else min(amount, pending_balance)
+
         trade = await self._trade_repo.create(
             user_id=user_id,
             action=TradeAction(decision.action),
@@ -92,13 +106,14 @@ class TradingService:
         await self._trade_repo.mark_executed(
             trade.id, mock_price, TradeStatus.SIMULATED
         )
-        await self._saving_entries.create_investment_debit(
-            user_id=user_id,
-            amount=amount,
-            trade_id=trade.id,
-            saving_id=saving_id,
-            description=f"Simulated investment in {decision.asset}",
-        )
+        if debit_savings:
+            await self._saving_entries.create_investment_debit(
+                user_id=user_id,
+                amount=amount,
+                trade_id=trade.id,
+                saving_id=saving_id,
+                description=f"Simulated investment in {decision.asset}",
+            )
         log.info("trade.simulated", trade_id=str(trade.id), price=mock_price)
 
         return trade

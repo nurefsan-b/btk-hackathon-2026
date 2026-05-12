@@ -4,16 +4,16 @@ import { TransactionsList } from '../components/transactions-list';
 import { AIAgentAdvisor } from '../components/ai-agent-advisor';
 import { DemoPanel } from '../components/demo-panel';
 import { ConnectionBanner } from '../components/connection-banner';
+import { useAuth } from '../lib/auth-context';
 import {
     createTransaction,
+    getTradeHistory,
     getTransactions,
     getSavingsSummary,
     triggerAITrade,
-    healthCheck,
+    type TradeResponse,
     type TransactionResponse,
 } from '../lib/api';
-
-const DEMO_USER = 'user_demo';
 
 interface DisplayTransaction {
     id: string;
@@ -23,6 +23,9 @@ interface DisplayTransaction {
     extractedAmount: number;
     date: string;
     category: string;
+    type?: 'purchase' | 'investment';
+    asset?: string;
+    status?: string;
 }
 
 function toDisplay(tx: TransactionResponse): DisplayTransaction {
@@ -48,22 +51,43 @@ function guessCategoryFromMerchant(merchant: string): string {
     return 'Other';
 }
 
+function tradeToDisplay(trade: TradeResponse): DisplayTransaction {
+    return {
+        id: `trade-${trade.id}`,
+        name: `${trade.action.toUpperCase()} ${trade.asset}`,
+        originalAmount: trade.amount_invested,
+        roundedAmount: trade.amount_invested,
+        extractedAmount: 0,
+        date: trade.created_at.split('T')[0],
+        category: 'Investment',
+        type: 'investment',
+        asset: trade.asset,
+        status: trade.status,
+    };
+}
+
 export function Dashboard() {
+    const { user } = useAuth();
     const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
     const [totalSavings, setTotalSavings] = useState(0);
     const [totalInvested, setTotalInvested] = useState(0);
     const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [investLoading, setInvestLoading] = useState(false);
+    const userId = user?.id ?? 'user_demo';
 
     // ── Fetch data from backend ─────────────────────────────────
     const loadData = useCallback(async () => {
         try {
             const [txs, savings] = await Promise.all([
-                getTransactions(DEMO_USER),
-                getSavingsSummary(DEMO_USER),
+                getTransactions(userId),
+                getSavingsSummary(userId),
             ]);
-            setTransactions(txs.map(toDisplay));
+            const trades = await getTradeHistory(userId);
+            const activity = [...txs.map(toDisplay), ...trades.map(tradeToDisplay)].sort(
+                (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+            );
+            setTransactions(activity);
             setTotalSavings(savings.total_pending);
             setTotalInvested(savings.total_invested);
             setIsBackendOnline(true);
@@ -75,7 +99,7 @@ export function Dashboard() {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [userId]);
 
     useEffect(() => {
         loadData();
@@ -85,14 +109,14 @@ export function Dashboard() {
     const handleSimulateTransaction = async (name: string, amount: number) => {
         try {
             const tx = await createTransaction({
-                user_id: DEMO_USER,
+                user_id: userId,
                 amount,
                 merchant: name,
                 description: `POS - ${name}`,
                 currency: 'TRY',
             });
             setTransactions((prev) => [toDisplay(tx), ...prev]);
-            setTotalSavings((prev) => prev + tx.round_up_diff);
+            await loadData();
             setIsBackendOnline(true);
         } catch {
             // Offline fallback — update local state
@@ -117,11 +141,12 @@ export function Dashboard() {
     const handleApproveInvestment = async () => {
         setInvestLoading(true);
         try {
-            await triggerAITrade(DEMO_USER);
-            setTotalSavings(0);
+            await triggerAITrade(userId);
+            await loadData();
+            window.setTimeout(loadData, 2500);
             setIsBackendOnline(true);
         } catch {
-            setTotalSavings(0);
+            await loadData();
         } finally {
             setInvestLoading(false);
         }

@@ -38,7 +38,7 @@ def trigger_ai_trade(
         return result
     except Exception as exc:
         log.error("trigger_ai_trade.error", error=str(exc))
-        raise self.retry(exc=exc)
+        raise self.retry(exc=exc) from exc
 
 
 async def _execute(
@@ -56,7 +56,21 @@ async def _execute(
     from app.services.trading_service import TradingService
 
     # ── Step 1: AI decision (pure LLM, no DB) ─────────────────────────────────
-    decision = await run_trading_agent()
+    try:
+        decision = await run_trading_agent()
+    except Exception as exc:
+        from app.ai.schemas import TradeDecision
+
+        log.warning("trigger_ai_trade.agent_fallback", error=str(exc))
+        decision = TradeDecision(
+            action="buy",
+            asset="BIST100",
+            confidence_score=0.55,
+            reasoning=(
+                "Gemini analysis was unavailable, so the demo risk fallback allocated "
+                "the spare-change pool to BIST100."
+            ),
+        )
 
     # ── Step 2: Persist via service layer (all DB logic lives there) ───────────
     sid = uuid_lib.UUID(saving_id) if saving_id else None
@@ -67,6 +81,7 @@ async def _execute(
             decision=decision,
             amount=amount,
             saving_id=sid,
+            debit_savings=False,
         )
         await session.commit()
 
