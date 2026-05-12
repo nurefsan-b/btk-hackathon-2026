@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { SavingsPoolCard } from '../components/savings-pool-card';
 import { TransactionsList } from '../components/transactions-list';
-import { AIActionModal } from '../components/ai-action-modal';
+import { AIAgentAdvisor } from '../components/ai-agent-advisor';
 import { DemoPanel } from '../components/demo-panel';
 import { ConnectionBanner } from '../components/connection-banner';
 import {
@@ -52,7 +52,6 @@ export function Dashboard() {
     const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
     const [totalSavings, setTotalSavings] = useState(0);
     const [totalInvested, setTotalInvested] = useState(0);
-    const [showAIModal, setShowAIModal] = useState(false);
     const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [investLoading, setInvestLoading] = useState(false);
@@ -68,11 +67,6 @@ export function Dashboard() {
             setTotalSavings(savings.total_pending);
             setTotalInvested(savings.total_invested);
             setIsBackendOnline(true);
-
-            // Show AI modal when enough savings accumulated
-            if (savings.total_pending >= 100) {
-                setShowAIModal(true);
-            }
         } catch {
             setIsBackendOnline(false);
             // Fallback to demo data when backend is unavailable
@@ -124,20 +118,13 @@ export function Dashboard() {
         setInvestLoading(true);
         try {
             await triggerAITrade(DEMO_USER);
-            setShowAIModal(false);
             setTotalSavings(0);
             setIsBackendOnline(true);
         } catch {
-            // Still close modal in offline mode
-            setShowAIModal(false);
             setTotalSavings(0);
         } finally {
             setInvestLoading(false);
         }
-    };
-
-    const handleDismissInvestment = () => {
-        setShowAIModal(false);
     };
 
     return (
@@ -161,14 +148,11 @@ export function Dashboard() {
                     totalInvested={totalInvested}
                 />
 
-                {showAIModal && totalSavings >= 100 && (
-                    <AIActionModal
-                        amount={totalSavings}
-                        onApprove={handleApproveInvestment}
-                        onDismiss={handleDismissInvestment}
-                        isLoading={investLoading}
-                    />
-                )}
+                <AIAgentAdvisor
+                    amount={totalSavings}
+                    onApprove={handleApproveInvestment}
+                    isLoading={investLoading}
+                />
 
                 {isLoading ? (
                     <div className="rounded-2xl bg-card border border-border p-12 flex items-center justify-center">

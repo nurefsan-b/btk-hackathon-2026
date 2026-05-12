@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PortfolioOverview } from '../components/portfolio/portfolio-overview';
 import { AIPerformanceCard } from '../components/portfolio/ai-performance-card';
+import { AIAgentAdvisor } from '../components/ai-agent-advisor';
 import { AssetAllocationChart } from '../components/portfolio/asset-allocation-chart';
 import { ActiveHoldingsTable } from '../components/portfolio/active-holdings-table';
 import { ConnectionBanner } from '../components/connection-banner';
@@ -114,6 +115,21 @@ export function Portfolio() {
                 </div>
 
                 <ConnectionBanner isOnline={isBackendOnline} />
+
+                <AIAgentAdvisor 
+                    amount={savings?.total_pending || 0} 
+                    onApprove={async () => {
+                        // In portfolio page, we just trigger the trade if they click
+                        // (Usually they'd do it from dashboard but consistency helps)
+                        try {
+                            const { triggerAITrade } = await import('../lib/api');
+                            await triggerAITrade(userId);
+                            loadData();
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }}
+                />
 
                 <PortfolioOverview data={portfolioOverviewData} />
 
