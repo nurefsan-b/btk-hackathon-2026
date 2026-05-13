@@ -13,6 +13,7 @@ services:
       - ./traefik/dynamic:/etc/traefik/dynamic:ro
     command:
       - "--providers.docker.version=1.41"
+      - "--providers.docker.network=btk_net"
       - "--providers.file.directory=/etc/traefik/dynamic"
       - "--providers.file.watch=true"
     networks:
@@ -79,9 +80,10 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`api.localhost`)"
+      - "traefik.http.routers.backend.rule=Host(`${BACKEND_HOST:-api.localhost}`)"
       - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
+      - "traefik.docker.network=btk_net"
     networks:
       - btk_net
 
@@ -103,9 +105,10 @@ services:
       - backend
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`frontend.localhost`)"
+      - "traefik.http.routers.frontend.rule=Host(`${FRONTEND_HOST:-frontend.localhost}`) || Host(`${FRONTEND_ALT_HOST:-localhost}`)"
       - "traefik.http.routers.frontend.entrypoints=web"
       - "traefik.http.services.frontend.loadbalancer.server.port=5173"
+      - "traefik.docker.network=btk_net"
     networks:
       - btk_net
 
@@ -164,9 +167,10 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.flower.rule=Host(`flower.localhost`)"
+      - "traefik.http.routers.flower.rule=Host(`${FLOWER_HOST:-flower.localhost}`)"
       - "traefik.http.routers.flower.entrypoints=web"
       - "traefik.http.services.flower.loadbalancer.server.port=5555"
+      - "traefik.docker.network=btk_net"
     networks:
       - btk_net
 

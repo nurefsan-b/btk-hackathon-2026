@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import {
   ApiUser,
+  getAccessToken,
   getCurrentUser,
   loginWithPassword,
   registerWithPassword,
@@ -64,6 +65,27 @@ function mapApiUser(user: ApiUser): User {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(loadUser);
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) {
+      saveUser(null);
+      setUser(null);
+      return;
+    }
+
+    getCurrentUser()
+      .then((apiUser) => {
+        const u = mapApiUser(apiUser);
+        saveUser(u);
+        setUser(u);
+      })
+      .catch(() => {
+        setAccessToken(null);
+        saveUser(null);
+        setUser(null);
+      });
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const auth = await loginWithPassword(email, password);

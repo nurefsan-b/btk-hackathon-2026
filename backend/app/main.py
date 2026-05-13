@@ -42,7 +42,16 @@ def create_app() -> FastAPI:
     # ── CORS (future frontend) ──────────────────────────────
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost", "http://localhost:3000", "http://localhost:5173"],
+        allow_origins=[
+            "https://microfon.com.tr",
+            "https://www.microfon.com.tr",
+            "https://api.microfon.com.tr",
+            "http://www.microfon.com.tr",
+            "http://microfon.com.tr",
+            "http://api.microfon.com.tr",
+            "http://localhost",
+            "http://localhost:5173",
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

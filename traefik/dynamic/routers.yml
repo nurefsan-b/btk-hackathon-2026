@@ -2,12 +2,12 @@
 http:
   routers:
     backend:
-      rule: "Host(`api.localhost`)"
+      rule: "Host(`api.microfon.com.tr`)"
       service: backend
       entryPoints:
         - web
     frontend:
-      rule: "Host(`frontend.localhost`)"
+      rule: "Host(`www.microfon.com.tr`) || Host(`microfon.com.tr`)"
       service: frontend
       entryPoints:
         - web
@@ -33,8 +33,8 @@ http:
           - DELETE
           - OPTIONS
         accessControlAllowOriginList:
-          - "http://localhost:3000"
-          - "http://localhost:5173"
+          - "http://www.microfon.com.tr"
+          - "http://microfon.com.tr"
         accessControlAllowHeaders:
           - "Content-Type"
           - "Authorization"

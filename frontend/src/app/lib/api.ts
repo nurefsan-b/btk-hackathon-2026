@@ -6,7 +6,7 @@
  * during local Docker development Traefik routes everything through port 80.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://api.localhost";
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 const TOKEN_KEY = "kusurat_ai_access_token";
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -24,9 +24,19 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new ApiError(res.status, body || res.statusText);
+    throw new ApiError(res.status, extractErrorMessage(body) || res.statusText);
   }
   return res.json() as Promise<T>;
+}
+
+function extractErrorMessage(body: string): string {
+  if (!body) return "";
+  try {
+    const parsed = JSON.parse(body) as { detail?: unknown };
+    return typeof parsed.detail === "string" ? parsed.detail : body;
+  } catch {
+    return body;
+  }
 }
 
 export class ApiError extends Error {

@@ -39,6 +39,11 @@ class AuthService:
 
     async def login(self, payload: LoginRequest) -> AuthResponse:
         user = await self._repo.get_by_email(payload.email)
+        if user and not user.hashed_password and user.google_sub:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This account uses Google sign-in. Continue with Google.",
+            )
         if not user or not verify_password(payload.password, user.hashed_password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

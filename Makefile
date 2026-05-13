@@ -74,7 +74,7 @@ setup:
 	docker compose up -d --build
 	sleep 5
 	docker compose exec backend alembic upgrade head
-	@echo "✅  Setup complete! API: http://api.localhost  Flower: http://flower.localhost"
+	@echo "✅  Setup complete! API: http://api.microfon.com.tr  Flower: http://flower.microfon.com.tr"
 
 health:
 	curl -s http://api.localhost/health | python3 -m json.tool

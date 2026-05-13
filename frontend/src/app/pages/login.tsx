@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, Sparkles, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../lib/auth-context';
-import { getGoogleLoginUrl } from '../lib/api';
+import { ApiError, getGoogleLoginUrl } from '../lib/api';
 
 export function Login() {
     const navigate = useNavigate();
@@ -22,8 +22,8 @@ export function Login() {
         try {
             await login(email, password);
             navigate('/dashboard');
-        } catch {
-            setError('Email or password is invalid.');
+        } catch (err) {
+            setError(err instanceof ApiError ? err.message : 'Email or password is invalid.');
         } finally {
             setIsSubmitting(false);
         }

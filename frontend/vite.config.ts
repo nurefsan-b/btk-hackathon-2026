@@ -17,6 +17,16 @@ export default defineConfig({
         },
     },
 
+    server: {
+        allowedHosts: [
+            'localhost',
+            'frontend.localhost',
+            'microfon.com.tr',
+            'www.microfon.com.tr',
+            'api.microfon.com.tr'
+        ],
+    },
+
     // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
     assetsInclude: ['**/*.svg', '**/*.csv'],
 })
