@@ -1,5 +1,5 @@
 /**
- * Küsürat-AI — Centralized API Client
+ * MicroFon — Centralized API Client
  *
  * All backend communication goes through this module.
  * In production the base URL would come from an env variable;
@@ -7,7 +7,7 @@
  */
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-const TOKEN_KEY = "kusurat_ai_access_token";
+const TOKEN_KEY = "microfon_access_token";
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -114,6 +114,7 @@ export interface ApiUser {
   risk_profile: "low" | "medium" | "high";
   auth_provider: string;
   avatar_url: string | null;
+  is_2fa_enabled: boolean;
   created_at: string;
 }
 
@@ -208,6 +209,23 @@ export function triggerAITrade(userId: string, savingId?: string) {
 /** GET /trades/{userId} — fetch trade history */
 export function getTradeHistory(userId: string, limit = 20) {
   return request<TradeResponse[]>(`/trades/${userId}?limit=${limit}`);
+}
+
+export function changePassword(currentPassword: string, newPassword: string) {
+  return request<{ message: string }>("/users/me/change-password", {
+    method: "POST",
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
+}
+
+export function toggle2FA(enabled: boolean) {
+  return request<ApiUser>("/users/me/2fa/toggle", {
+    method: "POST",
+    body: JSON.stringify({ enabled }),
+  });
 }
 
 /** Health check — useful for showing connection status */

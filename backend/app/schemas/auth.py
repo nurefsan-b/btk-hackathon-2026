@@ -16,6 +16,7 @@ class UserResponse(BaseModel):
     risk_profile: RiskProfile
     auth_provider: str
     avatar_url: str | None
+    is_2fa_enabled: bool
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -50,3 +51,12 @@ class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8)
+
+
+class Toggle2FARequest(BaseModel):
+    enabled: bool

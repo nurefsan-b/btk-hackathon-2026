@@ -45,7 +45,7 @@ export function AuthCallback() {
         </div>
         <h1 className="text-xl mb-2">{error ? 'Sign-in failed' : 'Completing sign-in'}</h1>
         <p className="text-sm text-muted-foreground">
-          {error ?? 'Your Google account is being connected to Küsürat-AI.'}
+          {error ?? 'Your Google account is being connected to MicroFon.'}
         </p>
       </div>
     </div>

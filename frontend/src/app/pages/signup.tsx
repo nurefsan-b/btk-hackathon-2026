@@ -76,7 +76,7 @@ export function SignUp() {
               <Sparkles className="w-6 h-6 text-[#0a0e27]" />
             </div>
             <div className="text-xl bg-gradient-to-r from-[#00ff88] to-[#8b5cf6] bg-clip-text text-transparent">
-              Küsürat-AI
+              MicroFon
             </div>
           </div>
 

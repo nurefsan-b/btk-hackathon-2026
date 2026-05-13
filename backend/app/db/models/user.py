@@ -30,6 +30,7 @@ class User(Base):
     avatar_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     risk_profile: Mapped[str] = mapped_column(String(16), default="medium", nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_2fa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

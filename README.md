@@ -1,4 +1,4 @@
-# 🪙 Küsürat-AI — Micro-Savings & AI-Driven Trading Platform
+# 🪙 MicroFon — Micro-Savings & AI-Driven Trading Platform
 
 > **BTK Akademi Hackathon 2026**  
 > Turn your spare change into smart investments — powered by Gemini AI.
@@ -11,7 +11,7 @@ Millions of small transactions happen daily. The spare change from rounding (₺
 
 ## 💡 Solution
 
-**Küsürat-AI** automatically:
+**MicroFon** automatically:
 1. **Collects** spare change from every transaction via intelligent round-up
 2. **Accumulates** weekly savings pools
 3. **Analyzes** real-time financial news using Gemini AI

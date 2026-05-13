@@ -15,6 +15,7 @@ export interface User {
   fullName: string;
   email: string;
   riskProfile: 'low' | 'medium' | 'high';
+  is2FAEnabled: boolean;
   createdAt: string;
 }
 
@@ -32,7 +33,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 // ─── Storage Helpers ────────────────────────────────────────
 
-const STORAGE_KEY = 'kusurat_ai_user';
+const STORAGE_KEY = 'microfon_user';
 
 function loadUser(): User | null {
   try {
@@ -57,6 +58,7 @@ function mapApiUser(user: ApiUser): User {
     fullName: user.full_name,
     email: user.email,
     riskProfile: user.risk_profile,
+    is2FAEnabled: user.is_2fa_enabled,
     createdAt: user.created_at,
   };
 }

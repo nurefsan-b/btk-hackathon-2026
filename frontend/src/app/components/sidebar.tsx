@@ -32,7 +32,7 @@ export function Sidebar() {
                     </div>
                     <div>
                         <div className="text-sm text-sidebar-foreground opacity-90">
-                            Küsürat-AI
+                            MicroFon
                         </div>
                     </div>
                 </div>

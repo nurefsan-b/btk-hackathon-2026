@@ -13,7 +13,7 @@ import { AuthCallback } from './pages/auth-callback';
 // ── Protected Layout (sidebar + content) ────────────────────
 function ProtectedLayout() {
     const { isAuthenticated } = useAuth();
-    if (!isAuthenticated) return <Navigate to="/login" replace />;
+    if (!isAuthenticated) return <Navigate to="/signup" replace />;
 
     return (
         <div className="size-full flex bg-background dark">
@@ -64,7 +64,7 @@ export default function App() {
                     </Route>
 
                     {/* ── Catch-all redirect ──────────────── */}
-                    <Route path="*" element={<Navigate to="/login" replace />} />
+                    <Route path="*" element={<Navigate to="/signup" replace />} />
                 </Routes>
             </AuthProvider>
         </BrowserRouter>

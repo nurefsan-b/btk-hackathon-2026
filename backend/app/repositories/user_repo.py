@@ -64,3 +64,13 @@ class UserRepository:
         await self._session.flush()
         await self._session.refresh(user)
         return user
+
+    async def update_password(self, user: User, hashed_password: str) -> None:
+        user.hashed_password = hashed_password
+        await self._session.flush()
+
+    async def update_2fa(self, user: User, enabled: bool) -> User:
+        user.is_2fa_enabled = enabled
+        await self._session.flush()
+        await self._session.refresh(user)
+        return user

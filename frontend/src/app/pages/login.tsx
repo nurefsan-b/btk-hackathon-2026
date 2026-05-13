@@ -49,7 +49,7 @@ export function Login() {
                             <Sparkles className="w-6 h-6 text-[#0a0e27]" />
                         </div>
                         <div className="text-xl bg-gradient-to-r from-[#00ff88] to-[#8b5cf6] bg-clip-text text-transparent">
-                            Küsürat-AI
+                            MicroFon
                         </div>
                     </div>
 
@@ -58,7 +58,7 @@ export function Login() {
                         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#8b5cf6]/10 to-[#00ff88]/10 rounded-full blur-3xl"></div>
 
                         <div className="relative z-10">
-                            <h1 className="text-2xl mb-2">Welcome back to Küsürat-AI</h1>
+                            <h1 className="text-2xl mb-2">Welcome back to MicroFon</h1>
                             <p className="text-sm text-muted-foreground mb-8">
                                 Your AI agent is actively monitoring the markets
                             </p>

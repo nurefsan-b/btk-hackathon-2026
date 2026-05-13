@@ -158,7 +158,7 @@ export function Dashboard() {
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h1 className="text-3xl tracking-tight bg-gradient-to-r from-[#00ff88] to-[#8b5cf6] bg-clip-text text-transparent">
-                            Küsürat-AI
+                            MicroFon
                         </h1>
                         <p className="text-muted-foreground mt-1">
                             Micro-Investment Agent

@@ -11,7 +11,7 @@ from app.config import get_settings
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.models.user import User
 from app.repositories.user_repo import UserRepository
-from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest
+from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest, PasswordChangeRequest, Toggle2FARequest
 
 settings = get_settings()
 log = structlog.get_logger()
@@ -149,6 +149,25 @@ class AuthService:
             )
 
         return self._auth_response(user)
+
+    async def change_password(self, user: User, payload: PasswordChangeRequest) -> None:
+        if user.google_sub and not user.hashed_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Accounts using Google sign-in cannot change password manually",
+            )
+        
+        if not verify_password(payload.current_password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Current password is incorrect",
+            )
+        
+        new_hashed = hash_password(payload.new_password)
+        await self._repo.update_password(user, new_hashed)
+
+    async def toggle_2fa(self, user: User, payload: Toggle2FARequest) -> User:
+        return await self._repo.update_2fa(user, payload.enabled)
 
     def _auth_response(self, user: User) -> AuthResponse:
         token = create_access_token(subject=str(user.id), extra={"email": user.email})
