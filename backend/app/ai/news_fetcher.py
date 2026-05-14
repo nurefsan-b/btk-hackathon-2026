@@ -14,6 +14,11 @@ FINANCIAL_KEYWORDS = [
     "BIST", "Türkiye ekonomi", "Fed", "merkez bankası", "resesyon",
 ]
 
+PLACEHOLDER_API_KEYS = {
+    "your-newsapi-key-here",
+    "your-newsapi-key-placeholder",
+}
+
 
 @retry(
     stop=stop_after_attempt(3),
@@ -25,34 +30,47 @@ async def fetch_financial_news(query: str = "Türkiye ekonomi borsa") -> list[di
     Fetch recent financial news headlines from NewsAPI.
     Retries up to 3 times with exponential backoff (tenacity).
     """
-    if not settings.news_api_key:
+    if not _has_real_news_api_key():
         log.warning("news_fetcher.no_api_key", msg="Using mock news data")
         return _mock_news()
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.get(
-            settings.news_api_url,
-            params={
-                "q": query,
-                "language": "tr",
-                "sortBy": "publishedAt",
-                "pageSize": 10,
-                "apiKey": settings.news_api_key,
-            },
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                settings.news_api_url,
+                params={
+                    "q": query,
+                    "language": "tr",
+                    "sortBy": "publishedAt",
+                    "pageSize": 10,
+                    "apiKey": settings.news_api_key,
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            articles = data.get("articles", [])
+            log.info("news_fetcher.success", count=len(articles))
+            return [
+                {
+                    "title": a["title"],
+                    "description": a.get("description", ""),
+                    "source": (a.get("source") or {}).get("name") or "NewsAPI",
+                    "published_at": a.get("publishedAt") or "Latest",
+                }
+                for a in articles
+            ]
+    except httpx.HTTPError as exc:
+        log.warning(
+            "news_fetcher.http_error",
+            error=str(exc),
+            msg="Using mock news data",
         )
-        response.raise_for_status()
-        data = response.json()
-        articles = data.get("articles", [])
-        log.info("news_fetcher.success", count=len(articles))
-        return [
-            {
-                "title": a["title"],
-                "description": a.get("description", ""),
-                "source": (a.get("source") or {}).get("name") or "NewsAPI",
-                "published_at": a.get("publishedAt") or "Latest",
-            }
-            for a in articles
-        ]
+        return _mock_news()
+
+
+def _has_real_news_api_key() -> bool:
+    key = settings.news_api_key.strip()
+    return bool(key) and key.lower() not in PLACEHOLDER_API_KEYS
 
 
 def _mock_news() -> list[dict]:
