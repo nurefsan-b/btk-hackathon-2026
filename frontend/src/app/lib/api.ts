@@ -107,6 +107,36 @@ export interface TriggerTradeResult {
   status: string;
 }
 
+export interface SentimentInsight {
+  id: string;
+  headline: string;
+  source: string;
+  timestamp: string;
+  sentiment_score: number;
+  ai_conclusion: string;
+}
+
+export interface ReasoningStep {
+  step: number;
+  title: string;
+  description: string;
+  status: "completed" | "active" | "pending";
+}
+
+export interface BrainMetrics {
+  articles_analyzed: number;
+  market_sentiment: string;
+  is_scanning: boolean;
+  active_sources: number;
+}
+
+export interface AIInsightsResponse {
+  generated_at: string;
+  brain_metrics: BrainMetrics;
+  sentiment_feed: SentimentInsight[];
+  reasoning_steps: ReasoningStep[];
+}
+
 export interface ApiUser {
   id: string;
   email: string;
@@ -209,6 +239,10 @@ export function triggerAITrade(userId: string, savingId?: string) {
 /** GET /trades/{userId} — fetch trade history */
 export function getTradeHistory(userId: string, limit = 20) {
   return request<TradeResponse[]>(`/trades/${userId}?limit=${limit}`);
+}
+
+export function getAIInsights(userId: string) {
+  return request<AIInsightsResponse>(`/ai/insights/${userId}`);
 }
 
 export function changePassword(currentPassword: string, newPassword: string) {

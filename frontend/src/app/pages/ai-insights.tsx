@@ -4,11 +4,11 @@ import { SentimentFeed } from '../components/ai-insights/sentiment-feed';
 import { ReasoningLog } from '../components/ai-insights/reasoning-log';
 import { ConnectionBanner } from '../components/connection-banner';
 import { useAuth } from '../lib/auth-context';
-import { getTradeHistory, type TradeResponse } from '../lib/api';
+import { getAIInsights, type AIInsightsResponse } from '../lib/api';
 
 export function AIInsights() {
     const { user } = useAuth();
-    const [trades, setTrades] = useState<TradeResponse[]>([]);
+    const [insights, setInsights] = useState<AIInsightsResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
 
@@ -16,8 +16,8 @@ export function AIInsights() {
 
     const loadData = useCallback(async () => {
         try {
-            const tradeData = await getTradeHistory(userId);
-            setTrades(tradeData);
+            const insightData = await getAIInsights(userId);
+            setInsights(insightData);
             setIsBackendOnline(true);
         } catch (err) {
             console.error('AI Insights load error:', err);
@@ -33,22 +33,24 @@ export function AIInsights() {
 
     // ─── Data Mapping ──────────────────────────────────────────
 
-    const brainMetrics = {
-        articlesAnalyzed: 1245 + (trades.length * 42), // Dynamic-ish
-        marketSentiment: trades.length > 0 ? (trades[0].action === 'buy' ? 'Bullish' : 'Neutral') : 'Scanning',
-        isScanning: true,
-        activeSources: 127,
-    };
+    const brainMetrics = insights
+        ? {
+            articlesAnalyzed: insights.brain_metrics.articles_analyzed,
+            marketSentiment: insights.brain_metrics.market_sentiment,
+            isScanning: insights.brain_metrics.is_scanning,
+            activeSources: insights.brain_metrics.active_sources,
+        }
+        : MOCK_BRAIN_METRICS;
 
-    // Use actual trade reasoning for the log if available
-    const reasoningSteps = trades.length > 0 
-        ? trades.slice(0, 1).flatMap(t => [
-            { step: 1, title: 'Accumulated Funds', description: `Pool of ₺${t.amount_invested.toFixed(2)} detected.`, status: 'completed' as const },
-            { step: 2, title: 'AI Analysis', description: `Sentiment analysis complete for ${t.asset} sector.`, status: 'completed' as const },
-            { step: 3, title: 'Risk Check', description: `Confidence score: ${(t.confidence_score * 100).toFixed(0)}%. Risk profile match.`, status: 'completed' as const },
-            { step: 4, title: 'Execution', description: `Action: ${t.action} ${t.asset}. Reasoning: ${t.reasoning}`, status: 'completed' as const },
-          ])
-        : MOCK_REASONING_STEPS;
+    const reasoningSteps = insights?.reasoning_steps ?? MOCK_REASONING_STEPS;
+    const sentimentItems = insights?.sentiment_feed.map((item) => ({
+        id: item.id,
+        headline: item.headline,
+        source: item.source,
+        timestamp: item.timestamp,
+        sentimentScore: item.sentiment_score,
+        aiConclusion: item.ai_conclusion,
+    })) ?? SENTIMENT_ITEMS;
 
     if (isLoading) {
         return (
@@ -79,7 +81,7 @@ export function AIInsights() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                     <div className="lg:col-span-3">
-                        <SentimentFeed items={SENTIMENT_ITEMS} />
+                        <SentimentFeed items={sentimentItems} />
                     </div>
                     <div className="lg:col-span-2">
                         <ReasoningLog steps={reasoningSteps} />
@@ -89,6 +91,13 @@ export function AIInsights() {
         </main>
     );
 }
+
+const MOCK_BRAIN_METRICS = {
+    articlesAnalyzed: 126,
+    marketSentiment: 'Scanning',
+    isScanning: true,
+    activeSources: 3,
+};
 
 const MOCK_REASONING_STEPS = [
     { step: 1, title: 'Accumulated Spare Change', description: 'Collected ₺340.00 from user transactions.', status: 'completed' as const },

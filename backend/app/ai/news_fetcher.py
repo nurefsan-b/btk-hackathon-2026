@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+import httpx
 import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential
-
-import httpx
 
 from app.config import get_settings
 
@@ -46,7 +45,12 @@ async def fetch_financial_news(query: str = "Türkiye ekonomi borsa") -> list[di
         articles = data.get("articles", [])
         log.info("news_fetcher.success", count=len(articles))
         return [
-            {"title": a["title"], "description": a.get("description", "")}
+            {
+                "title": a["title"],
+                "description": a.get("description", ""),
+                "source": (a.get("source") or {}).get("name") or "NewsAPI",
+                "published_at": a.get("publishedAt") or "Latest",
+            }
             for a in articles
         ]
 
@@ -57,13 +61,19 @@ def _mock_news() -> list[dict]:
         {
             "title": "Borsa İstanbul'da sert yükseliş: BIST100 endeksi rekor kırdı",
             "description": "Küresel piyasalardaki iyimserlik BIST100'ü yukarı taşıdı.",
+            "source": "Demo News",
+            "published_at": "5 min ago",
         },
         {
             "title": "Merkez Bankası faiz kararını açıkladı",
             "description": "TCMB politika faizini sabit tuttu, piyasalar olumlu karşıladı.",
+            "source": "Demo News",
+            "published_at": "18 min ago",
         },
         {
             "title": "Altın fiyatları Fed beklentileriyle geriledi",
             "description": "Ons altın 2.300 dolar sınırının altına indi.",
+            "source": "Demo News",
+            "published_at": "32 min ago",
         },
     ]
