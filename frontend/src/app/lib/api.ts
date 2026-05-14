@@ -221,6 +221,17 @@ export function changePassword(currentPassword: string, newPassword: string) {
   });
 }
 
+export function updateCurrentUser(payload: {
+  full_name?: string;
+  email?: string;
+  risk_profile?: "low" | "medium" | "high";
+}) {
+  return request<ApiUser>("/users/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function toggle2FA(enabled: boolean) {
   return request<ApiUser>("/users/me/2fa/toggle", {
     method: "POST",

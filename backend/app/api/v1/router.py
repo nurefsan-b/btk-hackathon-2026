@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.v1 import auth, transactions, savings, trades
+from app.api.v1 import auth, savings, trades, transactions, users
 
 api_v1_router = APIRouter()
 
@@ -26,4 +26,9 @@ api_v1_router.include_router(
     trades.router,
     prefix="/trades",
     tags=["trades"],
+)
+api_v1_router.include_router(
+    users.router,
+    prefix="/users",
+    tags=["users"],
 )

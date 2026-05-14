@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Shield, Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { changePassword } from '../../lib/api';
+import { useAuth } from '../../lib/auth-context';
 
 export function SecuritySettings() {
+    const { user, setTwoFactorEnabled } = useAuth();
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -11,6 +13,7 @@ export function SecuritySettings() {
     const [showNew, setShowNew] = useState(false);
     
     const [isLoading, setIsLoading] = useState(false);
+    const [is2FALoading, setIs2FALoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -33,6 +36,23 @@ export function SecuritySettings() {
             setMessage({ type: 'error', text: err.message || 'Failed to update password.' });
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handle2FAToggle = async () => {
+        if (!user) return;
+        setIs2FALoading(true);
+        setMessage(null);
+        try {
+            await setTwoFactorEnabled(!user.is2FAEnabled);
+            setMessage({
+                type: 'success',
+                text: `Two-factor authentication ${user.is2FAEnabled ? 'disabled' : 'enabled'} successfully.`,
+            });
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message || 'Failed to update 2FA.' });
+        } finally {
+            setIs2FALoading(false);
         }
     };
 
@@ -132,6 +152,35 @@ export function SecuritySettings() {
                         {isLoading ? 'Updating...' : 'Update Password'}
                     </button>
                 </form>
+            </div>
+
+            <div className="rounded-2xl bg-card border border-border p-6 backdrop-blur-sm">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h3 className="text-sm font-medium">Two-Factor Authentication</h3>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            {user?.is2FAEnabled
+                                ? 'Extra sign-in protection is enabled for this account.'
+                                : 'Enable an additional verification step for sensitive actions.'}
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handle2FAToggle}
+                        disabled={is2FALoading || !user}
+                        className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50 ${
+                            user?.is2FAEnabled
+                                ? 'bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30'
+                                : 'bg-[#00ff88] hover:bg-[#00ff88]/90 text-[#0a0e27]'
+                        }`}
+                    >
+                        {is2FALoading
+                            ? 'Updating...'
+                            : user?.is2FAEnabled
+                                ? 'Disable 2FA'
+                                : 'Enable 2FA'}
+                    </button>
+                </div>
             </div>
         </div>
     );

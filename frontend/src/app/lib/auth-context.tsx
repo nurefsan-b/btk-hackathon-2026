@@ -6,6 +6,8 @@ import {
   loginWithPassword,
   registerWithPassword,
   setAccessToken,
+  toggle2FA,
+  updateCurrentUser,
 } from './api';
 
 // ─── Types ──────────────────────────────────────────────────
@@ -26,7 +28,8 @@ interface AuthContextType {
   signup: (fullName: string, email: string, password: string, riskProfile: 'low' | 'medium' | 'high') => Promise<void>;
   completeTokenLogin: (token: string) => Promise<void>;
   logout: () => void;
-  updateProfile: (updates: Partial<Pick<User, 'fullName' | 'email' | 'riskProfile'>>) => void;
+  updateProfile: (updates: Partial<Pick<User, 'fullName' | 'email' | 'riskProfile'>>) => Promise<void>;
+  setTwoFactorEnabled: (enabled: boolean) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -123,19 +126,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateProfile = useCallback(
-    (updates: Partial<Pick<User, 'fullName' | 'email' | 'riskProfile'>>) => {
-      setUser((prev) => {
-        if (!prev) return prev;
-        const updated = { ...prev, ...updates };
-        saveUser(updated);
-        return updated;
+    async (updates: Partial<Pick<User, 'fullName' | 'email' | 'riskProfile'>>) => {
+      const apiUser = await updateCurrentUser({
+        full_name: updates.fullName,
+        email: updates.email,
+        risk_profile: updates.riskProfile,
       });
+      const updated = mapApiUser(apiUser);
+      saveUser(updated);
+      setUser(updated);
     },
     [],
   );
 
+  const setTwoFactorEnabled = useCallback(async (enabled: boolean) => {
+    const apiUser = await toggle2FA(enabled);
+    const updated = mapApiUser(apiUser);
+    saveUser(updated);
+    setUser(updated);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, completeTokenLogin, logout, updateProfile }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        login,
+        signup,
+        completeTokenLogin,
+        logout,
+        updateProfile,
+        setTwoFactorEnabled,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

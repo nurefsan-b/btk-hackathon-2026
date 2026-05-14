@@ -74,3 +74,21 @@ class UserRepository:
         await self._session.flush()
         await self._session.refresh(user)
         return user
+
+    async def update_profile(
+        self,
+        user: User,
+        *,
+        full_name: str | None = None,
+        email: str | None = None,
+        risk_profile: str | None = None,
+    ) -> User:
+        if full_name is not None:
+            user.full_name = full_name
+        if email is not None:
+            user.email = email.lower()
+        if risk_profile is not None:
+            user.risk_profile = risk_profile
+        await self._session.flush()
+        await self._session.refresh(user)
+        return user

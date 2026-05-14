@@ -8,12 +8,23 @@ export function ProfileCard() {
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   if (!user) return null;
 
-  const handleSave = () => {
-    updateProfile({ fullName, email });
-    setIsEditing(false);
+  const handleSave = async () => {
+    setIsSaving(true);
+    setMessage(null);
+    try {
+      await updateProfile({ fullName, email });
+      setMessage({ type: 'success', text: 'Profile updated successfully.' });
+      setIsEditing(false);
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -102,10 +113,11 @@ export function ProfileCard() {
               <div className="flex gap-2">
                 <button
                   onClick={handleSave}
+                  disabled={isSaving}
                   className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#00ff88] text-[#0a0e27] transition-all hover:scale-105 active:scale-95 text-sm font-medium"
                 >
                   <Check className="w-4 h-4" />
-                  Save Changes
+                  {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>
                 <button
                   onClick={handleCancel}
@@ -142,9 +154,23 @@ export function ProfileCard() {
               <h3 className="text-sm font-medium">Account Security</h3>
             </div>
             <p className="text-lg text-foreground">Verified</p>
-            <p className="text-xs text-muted-foreground mt-1">Your account is secured with 2FA</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {user.is2FAEnabled ? 'Your account is secured with 2FA' : '2FA is currently disabled'}
+            </p>
           </div>
         </div>
+
+        {message && (
+          <div
+            className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
+              message.type === 'success'
+                ? 'border-[#00ff88]/30 bg-[#00ff88]/10 text-[#00ff88]'
+                : 'border-red-500/30 bg-red-500/10 text-red-500'
+            }`}
+          >
+            {message.text}
+          </div>
+        )}
       </div>
     </motion.div>
   );

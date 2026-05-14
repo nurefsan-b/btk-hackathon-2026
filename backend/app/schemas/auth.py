@@ -60,3 +60,19 @@ class PasswordChangeRequest(BaseModel):
 
 class Toggle2FARequest(BaseModel):
     enabled: bool
+
+
+class UserUpdateRequest(BaseModel):
+    full_name: str | None = Field(default=None, min_length=2, max_length=255)
+    email: str | None = Field(default=None, min_length=3, max_length=255)
+    risk_profile: RiskProfile | None = None
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        email = value.strip().lower()
+        if "@" not in email:
+            raise ValueError("Invalid email")
+        return email
