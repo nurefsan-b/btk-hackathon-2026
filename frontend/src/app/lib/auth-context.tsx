@@ -8,6 +8,7 @@ import {
   setAccessToken,
   toggle2FA,
   updateCurrentUser,
+  verify2FA,
 } from './api';
 
 // ─── Types ──────────────────────────────────────────────────
@@ -24,7 +25,8 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ requires2FA: boolean; twoFactorToken?: string | null }>;
+  verifyCode: (twoFactorToken: string, code: string) => Promise<void>;
   signup: (fullName: string, email: string, password: string, riskProfile: 'low' | 'medium' | 'high') => Promise<void>;
   completeTokenLogin: (token: string) => Promise<void>;
   logout: () => void;
@@ -94,6 +96,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const auth = await loginWithPassword(email, password);
+    if (auth.requires_2fa) {
+      return { requires2FA: true, twoFactorToken: auth.two_factor_token };
+    }
+    setAccessToken(auth.access_token);
+    const u = mapApiUser(auth.user);
+    saveUser(u);
+    setUser(u);
+    return { requires2FA: false };
+  }, []);
+
+  const verifyCode = useCallback(async (twoFactorToken: string, code: string) => {
+    const auth = await verify2FA(twoFactorToken, code);
     setAccessToken(auth.access_token);
     const u = mapApiUser(auth.user);
     saveUser(u);
@@ -152,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isAuthenticated: !!user,
         login,
+        verifyCode,
         signup,
         completeTokenLogin,
         logout,

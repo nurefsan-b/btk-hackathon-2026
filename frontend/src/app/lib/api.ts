@@ -149,9 +149,11 @@ export interface ApiUser {
 }
 
 export interface AuthResponse {
-  access_token: string;
+  access_token: string | null;
   token_type: "bearer";
   user: ApiUser;
+  requires_2fa?: boolean;
+  two_factor_token?: string | null;
 }
 
 export function getAccessToken(): string | null {
@@ -184,6 +186,13 @@ export function loginWithPassword(email: string, password: string) {
   return request<AuthResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+  });
+}
+
+export function verify2FA(twoFactorToken: string, code: string) {
+  return request<AuthResponse>("/auth/verify-2fa", {
+    method: "POST",
+    body: JSON.stringify({ two_factor_token: twoFactorToken, code }),
   });
 }
 
