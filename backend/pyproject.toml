@@ -41,6 +41,7 @@ dependencies = [
 
     # ── Utilities ─────────────────────────────────────
     "structlog>=24.2.0",
+    "aiosmtplib>=3.0.0",
 ]
 
 [project.optional-dependencies]

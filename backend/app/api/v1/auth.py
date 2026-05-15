@@ -12,7 +12,7 @@ from app.config import get_settings
 from app.core.security import decode_access_token
 from app.dependencies import get_db
 from app.repositories.user_repo import UserRepository
-from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest, UserResponse
+from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest, UserResponse, Verify2FARequest
 from app.services.auth_service import AuthService
 
 router = APIRouter()
@@ -51,6 +51,11 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> Au
     return await AuthService(db).login(payload)
 
 
+@router.post("/verify-2fa", response_model=AuthResponse)
+async def verify_2fa(payload: Verify2FARequest, db: AsyncSession = Depends(get_db)) -> AuthResponse:
+    return await AuthService(db).verify_2fa(payload)
+
+
 @router.get("/me", response_model=UserResponse)
 async def me(current_user: UserResponse = Depends(get_current_user)) -> UserResponse:
     return current_user
@@ -86,6 +91,11 @@ async def google_callback(
         log.exception("google_callback_failed_unexpected", error_type=type(exc).__name__)
         return RedirectResponse(
             f"{settings.frontend_url}/auth/callback?{urlencode({'error': 'google_auth_failed'})}"
+        )
+
+    if auth.requires_2fa:
+        return RedirectResponse(
+            f"{settings.frontend_url}/login?{urlencode({'requires_2fa': 'true', '2fa_token': auth.two_factor_token, 'email': auth.user.email})}"
         )
 
     return RedirectResponse(

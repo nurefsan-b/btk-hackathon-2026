@@ -3,15 +3,26 @@ from __future__ import annotations
 from urllib.parse import urlencode
 
 import httpx
+import random
+import uuid
 import structlog
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
+from app.core.redis import RedisCache, get_async_redis
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.models.user import User
 from app.repositories.user_repo import UserRepository
-from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest, PasswordChangeRequest, Toggle2FARequest
+from app.schemas.auth import (
+    AuthResponse,
+    LoginRequest,
+    PasswordChangeRequest,
+    RegisterRequest,
+    Toggle2FARequest,
+    Verify2FARequest,
+)
+from app.services.email_service import send_2fa_email
 
 settings = get_settings()
 log = structlog.get_logger()
@@ -51,6 +62,37 @@ class AuthService:
             )
         if not user.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User is disabled")
+
+        log.info("login_attempt", user_id=user.id, is_2fa_enabled=user.is_2fa_enabled)
+
+        if user.is_2fa_enabled:
+            # Generate 6-digit code
+            code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+            # Generate temporary token for the verification step
+            two_factor_token = str(uuid.uuid4())
+
+            # Store in Redis
+            async with get_async_redis() as redis_client:
+                cache = RedisCache(redis_client)
+                # Store code tied to user_id
+                await cache.set(f"2fa:code:{user.id}", code, ttl=600)  # 10 mins
+                # Store user_id tied to temporary token
+                await cache.set(f"2fa:token:{two_factor_token}", str(user.id), ttl=600)
+
+            # Send Email
+            try:
+                await send_2fa_email(user.email, code)
+            except Exception:
+                log.exception("failed_to_send_2fa_email", user_id=user.id)
+                # We still return the 2FA required state, but the user might not get the email
+                # In a real app, we might want to handle this better
+
+            return AuthResponse(
+                user=user,
+                requires_2fa=True,
+                two_factor_token=two_factor_token
+            )
+
         return self._auth_response(user)
 
     def google_authorization_url(self) -> str:
@@ -148,6 +190,30 @@ class AuthService:
                 avatar_url=avatar_url,
             )
 
+        if user.is_2fa_enabled:
+            # Generate 6-digit code
+            code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+            # Generate temporary token for the verification step
+            two_factor_token = str(uuid.uuid4())
+
+            # Store in Redis
+            async with get_async_redis() as redis_client:
+                cache = RedisCache(redis_client)
+                await cache.set(f"2fa:code:{user.id}", code, ttl=600)
+                await cache.set(f"2fa:token:{two_factor_token}", str(user.id), ttl=600)
+
+            # Send Email
+            try:
+                await send_2fa_email(user.email, code)
+            except Exception:
+                log.exception("failed_to_send_2fa_email", user_id=user.id)
+
+            return AuthResponse(
+                user=user,
+                requires_2fa=True,
+                two_factor_token=two_factor_token
+            )
+
         return self._auth_response(user)
 
     async def change_password(self, user: User, payload: PasswordChangeRequest) -> None:
@@ -168,6 +234,39 @@ class AuthService:
 
     async def toggle_2fa(self, user: User, payload: Toggle2FARequest) -> User:
         return await self._repo.update_2fa(user, payload.enabled)
+
+    async def verify_2fa(self, payload: Verify2FARequest) -> AuthResponse:
+        async with get_async_redis() as redis_client:
+            cache = RedisCache(redis_client)
+            
+            # Get user_id from token
+            user_id_str = await cache.get(f"2fa:token:{payload.two_factor_token}")
+            if not user_id_str:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="2FA session expired or invalid"
+                )
+            
+            user_id = uuid.UUID(user_id_str)
+            
+            # Get expected code
+            expected_code = await cache.get(f"2fa:code:{user_id}")
+            if not expected_code or expected_code != payload.code:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid verification code"
+                )
+            
+            # Code is correct, cleanup Redis
+            await cache.delete(f"2fa:code:{user_id}")
+            await cache.delete(f"2fa:token:{payload.two_factor_token}")
+
+        # Get user and return auth response
+        user = await self._repo.get_by_id(user_id)
+        if not user or not user.is_active:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+            
+        return self._auth_response(user)
 
     def _auth_response(self, user: User) -> AuthResponse:
         token = create_access_token(subject=str(user.id), extra={"email": user.email})

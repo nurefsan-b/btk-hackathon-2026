@@ -48,9 +48,16 @@ class LoginRequest(BaseModel):
 
 
 class AuthResponse(BaseModel):
-    access_token: str
+    access_token: str | None = None
     token_type: str = "bearer"
     user: UserResponse
+    requires_2fa: bool = False
+    two_factor_token: str | None = None
+
+
+class Verify2FARequest(BaseModel):
+    two_factor_token: str
+    code: str
 
 
 class PasswordChangeRequest(BaseModel):

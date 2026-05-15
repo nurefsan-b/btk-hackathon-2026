@@ -56,6 +56,15 @@ class Settings(BaseSettings):
     # ── Trading ────────────────────────────────────────
     mock_trading_enabled: bool = True
 
+    # ── Mail ───────────────────────────────────────────
+    mail_server: str = "smtp.gmail.com"
+    mail_port: int = 587
+    mail_username: str = ""
+    mail_password: str = ""
+    mail_from: str = "noreply@microfon.com"
+    mail_ssl_tls: bool = False
+    mail_starttls: bool = True
+
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
