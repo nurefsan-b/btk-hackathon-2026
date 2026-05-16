@@ -5,6 +5,7 @@ import { Dashboard } from './pages/dashboard';
 import { Portfolio } from './pages/portfolio';
 import { Analytics } from './pages/analytics';
 import { AIInsights } from './pages/ai-insights';
+import { Markets } from './pages/markets';
 import { Settings } from './pages/settings';
 import { Login } from './pages/login';
 import { SignUp } from './pages/signup';
@@ -58,6 +59,7 @@ export default function App() {
                     <Route element={<ProtectedLayout />}>
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/portfolio" element={<Portfolio />} />
+                        <Route path="/markets" element={<Markets />} />
                         <Route path="/analytics" element={<Analytics />} />
                         <Route path="/ai-insights" element={<AIInsights />} />
                         <Route path="/settings" element={<Settings />} />

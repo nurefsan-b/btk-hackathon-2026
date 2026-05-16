@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, TrendingUp, Wallet, Settings, Sparkles, Menu, X, User } from 'lucide-react';
+import { LayoutDashboard, LineChart, TrendingUp, Wallet, Settings, Sparkles, Menu, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../lib/auth-context';
@@ -13,6 +13,7 @@ export function Sidebar() {
     const navItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
         { icon: Wallet, label: 'Portfolio', path: '/portfolio' },
+        { icon: LineChart, label: 'Markets', path: '/markets' },
         { icon: TrendingUp, label: 'Analytics', path: '/analytics' },
         { icon: Sparkles, label: 'AI Insights', path: '/ai-insights' },
         { icon: Settings, label: 'Settings', path: '/settings' },

@@ -184,6 +184,36 @@ export interface AnalyticsResponse {
   }>;
 }
 
+export interface MarketAsset {
+  symbol: string;
+  name: string;
+  assetType: string;
+  currency: string;
+}
+
+export interface MarketNewsItem {
+  title: string;
+  description: string;
+  source: string;
+  publishedAt: string;
+}
+
+export interface AssetResearchResponse {
+  asset: string;
+  name: string;
+  price: number;
+  currency: string;
+  previousClose: number | null;
+  changePercent: number | null;
+  volume: number | null;
+  news: MarketNewsItem[];
+  aiSummary: string;
+  recommendation: "watch" | "paper_buy" | "hold";
+  confidenceScore: number;
+  riskLevel: string;
+  generatedAt: string;
+}
+
 export interface ApiUser {
   id: string;
   email: string;
@@ -307,6 +337,27 @@ export function getAIAdvisor(userId: string) {
 
 export function getAnalytics(userId: string) {
   return request<AnalyticsResponse>(`/analytics/${userId}`);
+}
+
+export function getMarketAssets() {
+  return request<MarketAsset[]>("/market/assets");
+}
+
+export function getAssetResearch(symbol: string) {
+  return request<AssetResearchResponse>(`/market/research/${encodeURIComponent(symbol)}`);
+}
+
+export function createPaperTrade(payload: {
+  user_id: string;
+  asset: string;
+  amount?: number;
+  confidence_score: number;
+  reasoning: string;
+}) {
+  return request<TradeResponse>("/trades/paper", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function changePassword(currentPassword: string, newPassword: string) {
