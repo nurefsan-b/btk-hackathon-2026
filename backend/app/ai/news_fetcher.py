@@ -12,6 +12,17 @@ settings = get_settings()
 FINANCIAL_KEYWORDS = [
     "borsa", "hisse", "enflasyon", "faiz", "altın", "dolar", "euro",
     "BIST", "Türkiye ekonomi", "Fed", "merkez bankası", "resesyon",
+    "piyasa", "ekonomi", "finans", "yatırım", "bankacılık", "endeks",
+    "tahvil", "kur", "emtia", "petrol", "bitcoin", "kripto", "şirket",
+    "bilanço", "halka arz", "temettü", "THYAO", "ASELS", "KCHOL",
+    "SISE", "EREGL", "GARAN", "AKBNK",
+]
+
+IRRELEVANT_NEWS_TERMS = [
+    "kaza", "hayatını kaybetti", "yaşamını yitirdi", "öldü", "ölüm",
+    "yaralandı", "yaralı", "hastane", "cinayet", "yangın", "deprem",
+    "trafik", "fen lisesi", "yem karma", "makineye kapıldı", "asayiş",
+    "magazin", "spor", "futbol",
 ]
 
 PLACEHOLDER_API_KEYS = {
@@ -49,8 +60,7 @@ async def fetch_financial_news(query: str = "Türkiye ekonomi borsa") -> list[di
             response.raise_for_status()
             data = response.json()
             articles = data.get("articles", [])
-            log.info("news_fetcher.success", count=len(articles))
-            return [
+            normalized_articles = [
                 {
                     "title": a["title"],
                     "description": a.get("description", ""),
@@ -59,6 +69,16 @@ async def fetch_financial_news(query: str = "Türkiye ekonomi borsa") -> list[di
                 }
                 for a in articles
             ]
+            filtered_articles = filter_relevant_financial_news(
+                normalized_articles,
+                query=query,
+            )
+            log.info(
+                "news_fetcher.success",
+                count=len(articles),
+                filtered_count=len(filtered_articles),
+            )
+            return filtered_articles
     except httpx.HTTPError as exc:
         log.warning(
             "news_fetcher.http_error",
@@ -71,6 +91,52 @@ async def fetch_financial_news(query: str = "Türkiye ekonomi borsa") -> list[di
 def _has_real_news_api_key() -> bool:
     key = settings.news_api_key.strip()
     return bool(key) and key.lower() not in PLACEHOLDER_API_KEYS
+
+
+def filter_relevant_financial_news(
+    articles: list[dict],
+    *,
+    query: str,
+) -> list[dict]:
+    query_terms = _query_terms(query)
+    filtered = [
+        article
+        for article in articles
+        if _is_relevant_financial_article(article, query_terms)
+    ]
+    if filtered:
+        return filtered
+    return [
+        {
+            "title": "No directly relevant market news found",
+            "description": f"No finance-specific article matched the query: {query}.",
+            "source": "MicroFon Filter",
+            "published_at": "Latest",
+        }
+    ]
+
+
+def _is_relevant_financial_article(article: dict, query_terms: set[str]) -> bool:
+    text = f"{article.get('title') or ''} {article.get('description') or ''}".lower()
+    if any(term in text for term in IRRELEVANT_NEWS_TERMS):
+        return False
+
+    financial_hit = any(keyword.lower() in text for keyword in FINANCIAL_KEYWORDS)
+    query_hit = any(term in text for term in query_terms)
+    return financial_hit or query_hit
+
+
+def _query_terms(query: str) -> set[str]:
+    separators = [" OR ", " or ", "|", "(", ")", "\"", "'"]
+    normalized = query
+    for separator in separators:
+        normalized = normalized.replace(separator, " ")
+    terms = {
+        term.strip().lower()
+        for term in normalized.split()
+        if len(term.strip()) >= 3 and term.strip().lower() not in {"try", "and"}
+    }
+    return terms
 
 
 def _mock_news() -> list[dict]:
