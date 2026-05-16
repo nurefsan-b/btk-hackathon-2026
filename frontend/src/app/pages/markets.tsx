@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Search, TrendingUp, Newspaper, ShieldAlert, Loader2, CheckCircle2 } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router';
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  CheckCircle2,
+  Loader2,
+  Newspaper,
+  Search,
+  ShieldAlert,
+  TrendingUp,
+} from 'lucide-react';
 import { ConnectionBanner } from '../components/connection-banner';
 import { useAuth } from '../lib/auth-context';
 import {
@@ -17,18 +27,17 @@ const recommendationLabels = {
 };
 
 export function Markets() {
-  const { user } = useAuth();
-  const [assets, setAssets] = useState<MarketAsset[]>([]);
-  const [selectedSymbol, setSelectedSymbol] = useState('BIST100');
-  const [query, setQuery] = useState('');
-  const [research, setResearch] = useState<AssetResearchResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isOpeningTrade, setIsOpeningTrade] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
+  const { symbol } = useParams();
 
-  const userId = user?.id || 'user_demo';
+  return symbol ? <MarketDetail symbol={symbol} /> : <MarketGrid />;
+}
+
+function MarketGrid() {
+  const navigate = useNavigate();
+  const [assets, setAssets] = useState<MarketAsset[]>([]);
+  const [query, setQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
 
   const filteredAssets = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -38,37 +47,107 @@ export function Markets() {
     );
   }, [assets, query]);
 
-  const loadResearch = useCallback(async (symbol: string) => {
-    setIsAnalyzing(true);
-    setMessage(null);
-    try {
-      setResearch(await getAssetResearch(symbol));
-      setSelectedSymbol(symbol);
-      setIsBackendOnline(true);
-    } catch (err) {
-      console.error('Asset research load error:', err);
-      setIsBackendOnline(false);
-      setMessage('Asset research is unavailable right now.');
-    } finally {
-      setIsAnalyzing(false);
-      setIsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    async function loadInitialData() {
+    async function loadAssets() {
       try {
-        const assetData = await getMarketAssets();
-        setAssets(assetData);
+        setAssets(await getMarketAssets());
         setIsBackendOnline(true);
-        await loadResearch(assetData[0]?.symbol ?? 'BIST100');
       } catch (err) {
         console.error('Market assets load error:', err);
         setIsBackendOnline(false);
+      } finally {
         setIsLoading(false);
       }
     }
-    loadInitialData();
+    loadAssets();
+  }, []);
+
+  if (isLoading) {
+    return <MarketLoading label="Loading markets..." />;
+  }
+
+  return (
+    <main className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <PageHeader
+          title="Markets"
+          description="Browse supported assets one by one, then open a quote, news, and AI signal detail view."
+        />
+
+        <ConnectionBanner isOnline={isBackendOnline} />
+
+        <section className="rounded-2xl bg-card border border-border p-5">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search symbol, company, asset type"
+              className="w-full bg-input-background border border-border rounded-lg pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50"
+            />
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filteredAssets.map((asset) => (
+            <button
+              key={asset.symbol}
+              onClick={() => navigate(`/markets/${encodeURIComponent(asset.symbol)}`)}
+              className="group min-h-[150px] text-left rounded-2xl bg-card border border-border p-5 hover:border-secondary/60 hover:bg-muted/20 transition-all"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-2xl font-semibold">{asset.symbol}</p>
+                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{asset.name}</p>
+                </div>
+                <div className="w-9 h-9 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+                  <ArrowUpRight className="w-4 h-4 text-secondary" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-7">
+                <span className="text-[10px] uppercase tracking-wider text-secondary">
+                  {asset.assetType}
+                </span>
+                <span className="text-xs text-muted-foreground">{asset.currency}</span>
+              </div>
+            </button>
+          ))}
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function MarketDetail({ symbol }: { symbol: string }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [research, setResearch] = useState<AssetResearchResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isOpeningTrade, setIsOpeningTrade] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
+
+  const userId = user?.id || 'user_demo';
+
+  const loadResearch = useCallback(async () => {
+    setIsLoading(true);
+    setMessage(null);
+    try {
+      setResearch(await getAssetResearch(symbol));
+      setIsBackendOnline(true);
+    } catch (err) {
+      console.error('Asset research load error:', err);
+      setResearch(null);
+      setIsBackendOnline(false);
+      setMessage('Asset research is unavailable right now.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [symbol]);
+
+  useEffect(() => {
+    loadResearch();
   }, [loadResearch]);
 
   const openPaperTrade = async () => {
@@ -92,162 +171,138 @@ export function Markets() {
   };
 
   if (isLoading) {
-    return (
-      <main className="flex-1 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-[#00ff88] border-t-transparent rounded-full animate-spin" />
-          <p className="text-muted-foreground animate-pulse">Loading markets...</p>
-        </div>
-      </main>
-    );
+    return <MarketLoading label={`Loading ${symbol}...`} />;
   }
 
   return (
     <main className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="mb-8">
-          <h1 className="text-3xl tracking-tight bg-gradient-to-r from-[#00ff88] to-[#8b5cf6] bg-clip-text text-transparent">
-            Markets
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Asset research, live quotes, news context, and AI paper-trade signals
-          </p>
-        </div>
+        <button
+          onClick={() => navigate('/markets')}
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to markets</span>
+        </button>
 
         <ConnectionBanner isOnline={isBackendOnline} />
 
-        <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-6">
-          <section className="rounded-2xl bg-card border border-border p-5">
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search assets"
-                className="w-full bg-input-background border border-border rounded-lg pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50"
-              />
-            </div>
-
-            <div className="space-y-2 max-h-[620px] overflow-y-auto pr-1">
-              {filteredAssets.map((asset) => (
-                <button
-                  key={asset.symbol}
-                  onClick={() => loadResearch(asset.symbol)}
-                  className={`w-full text-left p-4 rounded-xl border transition-all ${
-                    selectedSymbol === asset.symbol
-                      ? 'bg-secondary/15 border-secondary/50'
-                      : 'bg-muted/20 border-border/50 hover:bg-muted/30'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium">{asset.symbol}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{asset.name}</p>
-                    </div>
-                    <span className="text-[10px] uppercase tracking-wider text-secondary">
-                      {asset.assetType}
+        {!research ? (
+          <div className="rounded-2xl bg-card border border-border p-8">
+            <p className="text-sm text-muted-foreground">{message ?? 'Asset detail unavailable.'}</p>
+          </div>
+        ) : (
+          <>
+            <section className="rounded-2xl bg-card border border-border p-6">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                <div>
+                  <p className="text-sm text-muted-foreground">{research.name}</p>
+                  <h1 className="text-4xl mt-1">{research.asset}</h1>
+                  <div className="flex items-end gap-3 mt-5">
+                    <span className="text-5xl font-semibold">{research.price.toFixed(2)}</span>
+                    <span className="text-muted-foreground mb-1">{research.currency}</span>
+                    <span
+                      className={`mb-1 text-sm ${
+                        (research.changePercent ?? 0) >= 0 ? 'text-[#00ff88]' : 'text-red-400'
+                      }`}
+                    >
+                      {(research.changePercent ?? 0) >= 0 ? '+' : ''}
+                      {(research.changePercent ?? 0).toFixed(2)}%
                     </span>
                   </div>
-                </button>
-              ))}
-            </div>
-          </section>
+                </div>
 
-          <section className="space-y-6">
-            {research && (
-              <>
-                <div className="rounded-2xl bg-card border border-border p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-                    <div>
-                      <p className="text-sm text-muted-foreground">{research.name}</p>
-                      <h2 className="text-3xl mt-1">{research.asset}</h2>
-                      <div className="flex items-end gap-3 mt-4">
-                        <span className="text-4xl font-semibold">
-                          {research.price.toFixed(2)}
-                        </span>
-                        <span className="text-muted-foreground mb-1">{research.currency}</span>
-                        <span
-                          className={`mb-1 text-sm ${
-                            (research.changePercent ?? 0) >= 0 ? 'text-[#00ff88]' : 'text-red-400'
-                          }`}
-                        >
-                          {(research.changePercent ?? 0) >= 0 ? '+' : ''}
-                          {(research.changePercent ?? 0).toFixed(2)}%
-                        </span>
+                <div className="grid grid-cols-3 gap-3 min-w-full lg:min-w-[420px]">
+                  <Metric label="Previous" value={research.previousClose?.toFixed(2) ?? '-'} />
+                  <Metric label="Volume" value={research.volume?.toLocaleString() ?? '-'} />
+                  <Metric label="Risk" value={research.riskLevel} />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-2xl bg-card border border-border p-6">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <TrendingUp className="w-5 h-5 text-[#00ff88]" />
+                    <h2 className="text-lg">AI Market Signal</h2>
+                  </div>
+                  <p className="text-sm leading-relaxed text-muted-foreground max-w-3xl">
+                    {research.aiSummary}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-muted/25 border border-border/50 p-4 min-w-[250px]">
+                  <p className="text-xs text-muted-foreground">Recommendation</p>
+                  <p className="text-lg mt-1">{recommendationLabels[research.recommendation]}</p>
+                  <p className="text-xs text-[#00ff88] mt-2">
+                    Confidence {Math.round(research.confidenceScore * 100)}%
+                  </p>
+                  <button
+                    onClick={openPaperTrade}
+                    disabled={isOpeningTrade || research.recommendation === 'hold'}
+                    className="mt-4 w-full bg-gradient-to-r from-[#00ff88] to-[#14b8a6] text-[#0a0e27] px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 disabled:opacity-40 disabled:grayscale"
+                  >
+                    {isOpeningTrade ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4" />
+                    )}
+                    <span className="text-sm font-bold">Open Paper Position</span>
+                  </button>
+                </div>
+              </div>
+              {message && <p className="text-xs text-muted-foreground mt-4">{message}</p>}
+            </section>
+
+            <section className="rounded-2xl bg-card border border-border p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <Newspaper className="w-5 h-5 text-secondary" />
+                <h2 className="text-lg">Symbol-Specific News</h2>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {research.news.map((item) => (
+                  <article key={`${item.source}-${item.title}`} className="p-4 rounded-xl bg-muted/20 border border-border/50">
+                    <div className="flex items-start gap-3">
+                      <ShieldAlert className="w-4 h-4 text-secondary mt-1 flex-shrink-0" />
+                      <div>
+                        <h3 className="text-sm">{item.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                          {item.description || 'No description available.'}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-2">
+                          {item.source} · {item.publishedAt}
+                        </p>
                       </div>
                     </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
+      </div>
+    </main>
+  );
+}
 
-                    <div className="grid grid-cols-3 gap-3 min-w-full lg:min-w-[360px]">
-                      <Metric label="Previous" value={research.previousClose?.toFixed(2) ?? '-'} />
-                      <Metric label="Volume" value={research.volume?.toLocaleString() ?? '-'} />
-                      <Metric label="Risk" value={research.riskLevel} />
-                    </div>
-                  </div>
-                </div>
+function PageHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="mb-8">
+      <h1 className="text-3xl tracking-tight bg-gradient-to-r from-[#00ff88] to-[#8b5cf6] bg-clip-text text-transparent">
+        {title}
+      </h1>
+      <p className="text-muted-foreground mt-1">{description}</p>
+    </div>
+  );
+}
 
-                <div className="rounded-2xl bg-card border border-border p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <TrendingUp className="w-5 h-5 text-[#00ff88]" />
-                        <h3 className="text-lg">AI Market Signal</h3>
-                      </div>
-                      <p className="text-sm leading-relaxed text-muted-foreground max-w-3xl">
-                        {research.aiSummary}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl bg-muted/25 border border-border/50 p-4 min-w-[240px]">
-                      <p className="text-xs text-muted-foreground">Recommendation</p>
-                      <p className="text-lg mt-1">{recommendationLabels[research.recommendation]}</p>
-                      <p className="text-xs text-[#00ff88] mt-2">
-                        Confidence {Math.round(research.confidenceScore * 100)}%
-                      </p>
-                      <button
-                        onClick={openPaperTrade}
-                        disabled={isOpeningTrade || research.recommendation === 'hold'}
-                        className="mt-4 w-full bg-gradient-to-r from-[#00ff88] to-[#14b8a6] text-[#0a0e27] px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 disabled:opacity-40 disabled:grayscale"
-                      >
-                        {isOpeningTrade ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="w-4 h-4" />
-                        )}
-                        <span className="text-sm font-bold">Open Paper Position</span>
-                      </button>
-                    </div>
-                  </div>
-                  {message && <p className="text-xs text-muted-foreground mt-4">{message}</p>}
-                </div>
-
-                <div className="rounded-2xl bg-card border border-border p-6">
-                  <div className="flex items-center gap-2 mb-5">
-                    <Newspaper className="w-5 h-5 text-secondary" />
-                    <h3 className="text-lg">Symbol-Specific News</h3>
-                  </div>
-                  <div className="space-y-3">
-                    {research.news.map((item) => (
-                      <article key={`${item.source}-${item.title}`} className="p-4 rounded-xl bg-muted/20 border border-border/50">
-                        <div className="flex items-start gap-3">
-                          <ShieldAlert className="w-4 h-4 text-secondary mt-1 flex-shrink-0" />
-                          <div>
-                            <h4 className="text-sm">{item.title}</h4>
-                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                              {item.description || 'No description available.'}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground mt-2">
-                              {item.source} · {item.publishedAt}
-                            </p>
-                          </div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </section>
-        </div>
+function MarketLoading({ label }: { label: string }) {
+  return (
+    <main className="flex-1 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-4 border-[#00ff88] border-t-transparent rounded-full animate-spin" />
+        <p className="text-muted-foreground animate-pulse">{label}</p>
       </div>
     </main>
   );
