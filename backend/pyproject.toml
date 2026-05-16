@@ -42,6 +42,7 @@ dependencies = [
     # ── Utilities ─────────────────────────────────────
     "structlog>=24.2.0",
     "aiosmtplib>=3.0.0",
+    "yfinance>=0.2.40",
 ]
 
 [project.optional-dependencies]
