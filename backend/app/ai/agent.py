@@ -10,6 +10,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.ai.news_fetcher import fetch_financial_news
+from app.ai.price_fetcher import fetch_market_data
 from app.ai.schemas import TradeDecision
 from app.config import get_settings
 
@@ -32,11 +33,15 @@ RULES:
 """
 
 _USER_PROMPT = """\
-Here are the latest financial news headlines:
+MARKET STATUS (Current Prices & 24h Change):
+{market_data}
 
+LATEST FINANCIAL NEWS HEADLINES:
 {news_summary}
 
-Based on these headlines, what is your trading decision?
+Based on the market momentum and the news headlines above, what is your trading decision? 
+If a news item is very positive but the asset is already up significantly, consider if it's a "buy" or "hold". 
+Explain your reasoning clearly.
 """
 
 
@@ -70,8 +75,15 @@ async def run_trading_agent() -> TradeDecision:
     llm, prompt, parser = _build_chain()
 
     news_articles = await fetch_financial_news()
+    market_data = await fetch_market_data()
+    
     news_summary = "\n".join(
         f"- {a['title']}: {a['description']}" for a in news_articles
+    )
+    
+    market_summary = "\n".join(
+        f"- {asset}: ${info['price']:.2f} ({info['change_24h']:+.2f}%)"
+        for asset, info in market_data.items()
     )
 
     chain = prompt | llm | parser
@@ -81,6 +93,7 @@ async def run_trading_agent() -> TradeDecision:
         {
             "format_instructions": parser.get_format_instructions(),
             "news_summary": news_summary,
+            "market_data": market_summary,
         }
     )
     log.info(
