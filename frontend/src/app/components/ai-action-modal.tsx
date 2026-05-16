@@ -6,9 +6,22 @@ interface AIActionModalProps {
     onApprove: () => void;
     onDismiss: () => void;
     isLoading?: boolean;
+    asset?: string;
+    confidence?: number;
+    riskLevel?: string;
+    expectedReturn?: string;
 }
 
-export function AIActionModal({ amount, onApprove, onDismiss, isLoading = false }: AIActionModalProps) {
+export function AIActionModal({
+    amount,
+    onApprove,
+    onDismiss,
+    isLoading = false,
+    asset = 'BIST100',
+    confidence = 0.65,
+    riskLevel = 'Medium',
+    expectedReturn = '~8%',
+}: AIActionModalProps) {
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -59,8 +72,8 @@ export function AIActionModal({ amount, onApprove, onDismiss, isLoading = false 
                         </div>
                         <div className="flex-1">
                             <p className="text-sm leading-relaxed">
-                                I have accumulated <span className="text-[#00ff88]">₺{amount.toFixed(2)}</span> from your spare change this week. I detected a{' '}
-                                <span className="text-secondary">highly positive trend</span> in the technology sector based on my daily financial news sentiment analysis.
+                                I have accumulated <span className="text-[#00ff88]">₺{amount.toFixed(2)}</span> from your spare change. I detected a{' '}
+                                <span className="text-secondary">supported market signal</span> for {asset} based on financial news sentiment analysis.
                             </p>
                         </div>
                     </div>
@@ -68,22 +81,22 @@ export function AIActionModal({ amount, onApprove, onDismiss, isLoading = false 
                     <div className="bg-card/50 rounded-lg p-4 border border-secondary/20">
                         <p className="text-sm mb-3">
                             Would you like me to automatically place a buy order for{' '}
-                            <span className="text-secondary">X Technology Fund</span> with this idle{' '}
+                            <span className="text-secondary">{asset}</span> with this idle{' '}
                             <span className="text-[#00ff88]">₺{amount.toFixed(2)}</span>?
                         </p>
 
                         <div className="grid grid-cols-3 gap-3 text-xs">
                             <div className="bg-muted/30 rounded-lg p-2 border border-border/30">
                                 <p className="text-muted-foreground mb-1">Confidence</p>
-                                <p className="text-[#00ff88]">92%</p>
+                                <p className="text-[#00ff88]">{Math.round(confidence * 100)}%</p>
                             </div>
                             <div className="bg-muted/30 rounded-lg p-2 border border-border/30">
                                 <p className="text-muted-foreground mb-1">Risk Level</p>
-                                <p className="text-accent">Medium</p>
+                                <p className="text-accent">{riskLevel}</p>
                             </div>
                             <div className="bg-muted/30 rounded-lg p-2 border border-border/30">
                                 <p className="text-muted-foreground mb-1">Est. Return</p>
-                                <p className="text-foreground">8-12%</p>
+                                <p className="text-foreground">{expectedReturn}</p>
                             </div>
                         </div>
                     </div>

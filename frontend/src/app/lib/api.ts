@@ -137,6 +137,24 @@ export interface AIInsightsResponse {
   reasoning_steps: ReasoningStep[];
 }
 
+export interface AdvisorDiscovery {
+  id: string;
+  text: string;
+  type: "analysis" | "sentiment" | "opportunity";
+}
+
+export interface AIAdvisorResponse {
+  generated_at: string;
+  asset: "BIST100" | "XAU" | "USD" | "EUR" | "BTC";
+  action: "buy" | "sell" | "hold";
+  confidence_score: number;
+  risk_level: string;
+  expected_return_label: string;
+  market_sentiment: string;
+  recommendation: string;
+  discoveries: AdvisorDiscovery[];
+}
+
 export interface AnalyticsResponse {
   generated_at: string;
   kpis: {
@@ -281,6 +299,10 @@ export function getTradeHistory(userId: string, limit = 20) {
 
 export function getAIInsights(userId: string) {
   return request<AIInsightsResponse>(`/ai/insights/${userId}`);
+}
+
+export function getAIAdvisor(userId: string) {
+  return request<AIAdvisorResponse>(`/ai/advisor/${userId}`);
 }
 
 export function getAnalytics(userId: string) {

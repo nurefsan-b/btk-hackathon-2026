@@ -101,12 +101,12 @@ const MOCK_BRAIN_METRICS = {
 
 const MOCK_REASONING_STEPS = [
     { step: 1, title: 'Accumulated Spare Change', description: 'Collected ₺340.00 from user transactions.', status: 'completed' as const },
-    { step: 2, title: 'Market Analysis', description: 'Detected positive trend in Renewable Energy. Sentiment: 88/100.', status: 'completed' as const },
+    { step: 2, title: 'Market Analysis', description: 'Detected constructive signal for BIST100. Sentiment: 88/100.', status: 'completed' as const },
     { step: 3, title: 'Risk Assessment', description: 'Risk level aligns with preferences. Confidence: 92%.', status: 'completed' as const },
-    { step: 4, title: 'Decision Made', description: 'Action: Invest ₺340 in Green Energy Index Fund.', status: 'active' as const },
+    { step: 4, title: 'Decision Made', description: 'Action: Open a ₺340 BIST100 paper position.', status: 'active' as const },
 ];
 
 const SENTIMENT_ITEMS = [
-    { id: '1', headline: 'Tech sector sees massive growth in Q3 earnings reports', source: 'Financial Times', timestamp: '15 min ago', sentimentScore: 92, aiConclusion: 'High probability of short-term gains in Tech Funds.' },
-    { id: '2', headline: 'Renewable energy companies exceed market expectations', source: 'Bloomberg', timestamp: '1 hour ago', sentimentScore: 88, aiConclusion: 'Strong positive sentiment. Recommended for allocation.' },
+    { id: '1', headline: 'BIST100 momentum improves after positive market close', source: 'Financial Times', timestamp: '15 min ago', sentimentScore: 92, aiConclusion: 'High probability of short-term gains in BIST100.' },
+    { id: '2', headline: 'Gold steadies as global risk appetite changes', source: 'Bloomberg', timestamp: '1 hour ago', sentimentScore: 88, aiConclusion: 'Strong positive sentiment. XAU remains in the supported watchlist.' },
 ];

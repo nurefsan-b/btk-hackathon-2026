@@ -28,6 +28,24 @@ class BrainMetrics(BaseModel):
     active_sources: int
 
 
+class AdvisorDiscovery(BaseModel):
+    id: str
+    text: str
+    type: str
+
+
+class AIAdvisorResponse(BaseModel):
+    generated_at: datetime
+    asset: str
+    action: str
+    confidence_score: float = Field(..., ge=0, le=1)
+    risk_level: str
+    expected_return_label: str
+    market_sentiment: str
+    recommendation: str
+    discoveries: list[AdvisorDiscovery]
+
+
 class AIInsightsResponse(BaseModel):
     generated_at: datetime
     brain_metrics: BrainMetrics

@@ -7,10 +7,12 @@ import { ConnectionBanner } from '../components/connection-banner';
 import { useAuth } from '../lib/auth-context';
 import {
     createTransaction,
+    getAIAdvisor,
     getTradeHistory,
     getTransactions,
     getSavingsSummary,
     triggerAITrade,
+    type AIAdvisorResponse,
     type TradeResponse,
     type TransactionResponse,
 } from '../lib/api';
@@ -74,14 +76,16 @@ export function Dashboard() {
     const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [investLoading, setInvestLoading] = useState(false);
+    const [advisor, setAdvisor] = useState<AIAdvisorResponse | null>(null);
     const userId = user?.id ?? 'user_demo';
 
     // ── Fetch data from backend ─────────────────────────────────
     const loadData = useCallback(async () => {
         try {
-            const [txs, savings] = await Promise.all([
+            const [txs, savings, advisorData] = await Promise.all([
                 getTransactions(userId),
                 getSavingsSummary(userId),
+                getAIAdvisor(userId),
             ]);
             const trades = await getTradeHistory(userId);
             const activity = [...txs.map(toDisplay), ...trades.map(tradeToDisplay)].sort(
@@ -90,9 +94,11 @@ export function Dashboard() {
             setTransactions(activity);
             setTotalSavings(savings.total_pending);
             setTotalInvested(savings.total_invested);
+            setAdvisor(advisorData);
             setIsBackendOnline(true);
         } catch {
             setIsBackendOnline(false);
+            setAdvisor(null);
             // Fallback to demo data when backend is unavailable
             setTransactions(FALLBACK_TRANSACTIONS);
             setTotalSavings(340.0);
@@ -177,6 +183,8 @@ export function Dashboard() {
                     amount={totalSavings}
                     onApprove={handleApproveInvestment}
                     isLoading={investLoading}
+                    advisor={advisor}
+                    isOnline={isBackendOnline}
                 />
 
                 {isLoading ? (

@@ -1,59 +1,40 @@
 import { Brain, TrendingUp, CheckCircle2, Sparkles, Loader2, Search, Zap, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useState, useEffect } from 'react';
+import { type AIAdvisorResponse } from '../lib/api';
 
 interface Discovery {
     id: string;
     text: string;
     type: 'analysis' | 'sentiment' | 'opportunity';
-    timestamp: Date;
 }
 
 interface AIAgentAdvisorProps {
     amount: number;
     onApprove: () => void;
     isLoading?: boolean;
+    advisor?: AIAdvisorResponse | null;
+    isOnline?: boolean | null;
 }
 
-export function AIAgentAdvisor({ amount, onApprove, isLoading = false }: AIAgentAdvisorProps) {
-    const [discoveries, setDiscoveries] = useState<Discovery[]>([
-        {
-            id: '1',
-            text: 'Scanning market sentiment for Technology sector...',
-            type: 'analysis',
-            timestamp: new Date()
-        }
-    ]);
-
-    // Simulate "filling up" with discoveries
-    useEffect(() => {
-        const potentialDiscoveries: Omit<Discovery, 'id' | 'timestamp'>[] = [
-            { text: 'Detected 12% increase in Social Media buzz for XTech.', type: 'sentiment' },
-            { text: 'Interest rates stabilized, favorable for Growth Stocks.', type: 'analysis' },
-            { text: 'Micro-savings threshold reached ₺100. Checking opportunities...', type: 'opportunity' },
-            { text: 'Found high-confidence entry point for Global Tech Fund.', type: 'opportunity' },
-            { text: 'Sentiment analysis score: 92/100 (Strong Bullish).', type: 'sentiment' },
-            { text: 'Scanning renewable energy sector news...', type: 'analysis' },
-            { text: 'Inflation data lower than expected. Positive for markets.', type: 'analysis' },
-            { text: 'Tech sector RSI indicates oversold conditions. Buy signal.', type: 'opportunity' },
-        ];
-
-        let index = 0;
-        const interval = setInterval(() => {
-            setDiscoveries(prev => {
-                const nextDiscovery = potentialDiscoveries[index % potentialDiscoveries.length];
-                index++;
-                return [
-                    ...prev,
-                    { ...nextDiscovery, id: Math.random().toString(), timestamp: new Date() }
-                ].slice(-4); // Keep last 4
-            });
-        }, 4000);
-
-        return () => clearInterval(interval);
-    }, []);
-
+export function AIAgentAdvisor({ amount, onApprove, isLoading = false, advisor, isOnline }: AIAgentAdvisorProps) {
     const canInvest = amount >= 100;
+    const discoveries: Discovery[] = advisor?.discoveries ?? [
+        {
+            id: 'offline',
+            text: isOnline === false
+                ? 'Backend offline; live advisor data is unavailable.'
+                : 'Waiting for advisor signal from backend.',
+            type: 'analysis',
+        },
+    ];
+    const confidence = advisor ? `${Math.round(advisor.confidence_score * 100)}%` : '--';
+    const risk = advisor?.risk_level ?? '--';
+    const expectedReturn = advisor?.expected_return_label ?? '--';
+    const recommendation = advisor?.recommendation
+        ?? `Accumulated ₺${amount.toFixed(2)}. Waiting for backend advisor data.`;
+    const selectedAsset = advisor?.asset ?? 'BIST100';
+    const marketSentiment = advisor?.market_sentiment ?? 'Pending';
+    const canApprove = canInvest && advisor?.action === 'buy';
 
     return (
         <motion.div
@@ -132,20 +113,20 @@ export function AIAgentAdvisor({ amount, onApprove, isLoading = false }: AIAgent
                             {canInvest ? (
                                 <div className="space-y-4">
                                     <p className="text-sm leading-relaxed">
-                                        I've accumulated <span className="text-[#00ff88] font-bold">₺{amount.toFixed(2)}</span>. Market conditions for <span className="text-secondary font-medium">X Technology Fund</span> are optimal.
+                                        {recommendation}
                                     </p>
                                     <div className="grid grid-cols-3 gap-2">
                                         <div className="bg-card/50 rounded-lg p-2 border border-border/30 text-center">
                                             <p className="text-[10px] text-muted-foreground">Confidence</p>
-                                            <p className="text-xs font-bold text-[#00ff88]">94%</p>
+                                            <p className="text-xs font-bold text-[#00ff88]">{confidence}</p>
                                         </div>
                                         <div className="bg-card/50 rounded-lg p-2 border border-border/30 text-center">
                                             <p className="text-[10px] text-muted-foreground">Risk</p>
-                                            <p className="text-xs font-bold text-accent">Med</p>
+                                            <p className="text-xs font-bold text-accent">{risk}</p>
                                         </div>
                                         <div className="bg-card/50 rounded-lg p-2 border border-border/30 text-center">
                                             <p className="text-[10px] text-muted-foreground">Return</p>
-                                            <p className="text-xs font-bold">~12%</p>
+                                            <p className="text-xs font-bold">{expectedReturn}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -169,7 +150,7 @@ export function AIAgentAdvisor({ amount, onApprove, isLoading = false }: AIAgent
                         <div className="mt-6">
                             <button
                                 onClick={onApprove}
-                                disabled={isLoading || !canInvest}
+                                disabled={isLoading || !canApprove}
                                 className="w-full bg-gradient-to-r from-[#00ff88] to-[#14b8a6] hover:from-[#00ff88]/90 hover:to-[#14b8a6]/90 text-[#0a0e27] px-4 py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-[#00ff88]/10 hover:shadow-[#00ff88]/20 hover:scale-[1.02] disabled:opacity-30 disabled:hover:scale-100 disabled:grayscale"
                             >
                                 {isLoading ? (
@@ -180,7 +161,9 @@ export function AIAgentAdvisor({ amount, onApprove, isLoading = false }: AIAgent
                                 ) : (
                                     <>
                                         <CheckCircle2 className="w-4 h-4" />
-                                        <span className="text-sm font-bold">Approve & Invest Now</span>
+                                        <span className="text-sm font-bold">
+                                            {advisor?.action === 'hold' ? 'Advisor Holding' : 'Approve Paper Trade'}
+                                        </span>
                                     </>
                                 )}
                             </button>
@@ -192,11 +175,11 @@ export function AIAgentAdvisor({ amount, onApprove, isLoading = false }: AIAgent
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1.5">
                             <BarChart3 className="w-3 h-3" />
-                            <span>Sentiment: Bullish</span>
+                            <span>Sentiment: {marketSentiment}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                             <TrendingUp className="w-3 h-3" />
-                            <span>Volatility: Low</span>
+                            <span>Asset: {selectedAsset}</span>
                         </div>
                     </div>
                     <span>ID: AGENT-RX-72</span>

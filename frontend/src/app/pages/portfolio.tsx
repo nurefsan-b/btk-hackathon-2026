@@ -9,7 +9,9 @@ import { useAuth } from '../lib/auth-context';
 import {
     getTradeHistory,
     getSavingsSummary,
+    getAIAdvisor,
     triggerAITrade,
+    type AIAdvisorResponse,
     type TradeResponse,
     type SavingsSummary,
 } from '../lib/api';
@@ -18,6 +20,7 @@ export function Portfolio() {
     const { user } = useAuth();
     const [trades, setTrades] = useState<TradeResponse[]>([]);
     const [savings, setSavings] = useState<SavingsSummary | null>(null);
+    const [advisor, setAdvisor] = useState<AIAdvisorResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
 
@@ -25,15 +28,18 @@ export function Portfolio() {
 
     const loadData = useCallback(async () => {
         try {
-            const [tradeData, savingsData] = await Promise.all([
+            const [tradeData, savingsData, advisorData] = await Promise.all([
                 getTradeHistory(userId),
                 getSavingsSummary(userId),
+                getAIAdvisor(userId),
             ]);
             setTrades(tradeData);
             setSavings(savingsData);
+            setAdvisor(advisorData);
             setIsBackendOnline(true);
         } catch (err) {
             console.error('Portfolio load error:', err);
+            setAdvisor(null);
             setIsBackendOnline(false);
         } finally {
             setIsLoading(false);
@@ -142,6 +148,8 @@ export function Portfolio() {
 
                 <AIAgentAdvisor 
                     amount={savings?.total_pending || 0} 
+                    advisor={advisor}
+                    isOnline={isBackendOnline}
                     onApprove={async () => {
                         // In portfolio page, we just trigger the trade if they click
                         // (Usually they'd do it from dashboard but consistency helps)
