@@ -11,7 +11,7 @@ from app.db.models.trade import Trade, TradeAction, TradeStatus
 from app.repositories.saving_entry_repo import SavingEntryRepository
 from app.repositories.saving_repo import SavingRepository
 from app.repositories.trade_repo import TradeRepository
-from app.services.market_price_provider import get_market_price
+from app.services.market_price_provider import MarketPrice, get_market_price
 
 log = structlog.get_logger()
 settings = get_settings()
@@ -111,13 +111,8 @@ class TradingService:
             else None
         )
         resolved_price = execution_price if execution_price is not None else price_quote.price
-        execution_status = (
-            TradeStatus.SIMULATED
-            if settings.mock_trading_enabled
-            else TradeStatus.EXECUTED
-        )
+        execution_status = self._execution_status()
 
-        # Execute as a paper trade unless mock_trading_enabled is disabled.
         await self._trade_repo.mark_executed(
             trade.id, resolved_price, execution_status
         )
@@ -127,7 +122,7 @@ class TradingService:
                 amount=amount,
                 trade_id=trade.id,
                 saving_id=saving_id,
-                description=f"Simulated investment in {decision.asset}",
+                description=f"{execution_status.value.title()} investment in {decision.asset}",
             )
         log.info(
             "trade.executed",
@@ -140,4 +135,62 @@ class TradingService:
         return trade
 
     async def get_trade_history(self, user_id: str, limit: int = 20) -> list[Trade]:
-        return await self._trade_repo.list_by_user(user_id, limit)
+        trades = await self._trade_repo.list_by_user(user_id, limit)
+        await self._mark_paper_trades_to_market(trades)
+        return trades
+
+    @staticmethod
+    def _execution_status() -> TradeStatus:
+        if settings.paper_trading_enabled:
+            return TradeStatus.PAPER
+        if settings.mock_trading_enabled:
+            return TradeStatus.SIMULATED
+        return TradeStatus.EXECUTED
+
+    async def _mark_paper_trades_to_market(self, trades: list[Trade]) -> None:
+        quotes: dict[str, MarketPrice] = {}
+        for trade in trades:
+            if not self._is_mark_to_market_trade(trade):
+                continue
+
+            asset = trade.asset.upper()
+            quote = quotes.get(asset)
+            if quote is None:
+                try:
+                    quote = await get_market_price(asset)
+                except Exception as exc:
+                    log.warning(
+                        "trade.mark_to_market_failed",
+                        trade_id=str(trade.id),
+                        asset=asset,
+                        error=str(exc),
+                    )
+                    continue
+                quotes[asset] = quote
+
+            executed_price = float(trade.executed_price)
+            amount_invested = float(trade.amount_invested)
+            quantity = amount_invested / executed_price
+            current_value = quantity * quote.price
+            profit_loss = round(current_value - amount_invested, 2)
+            await self._trade_repo.update_profit_loss(trade.id, profit_loss)
+            trade.profit_loss = profit_loss
+            log.info(
+                "trade.marked_to_market",
+                trade_id=str(trade.id),
+                asset=asset,
+                executed_price=executed_price,
+                current_price=quote.price,
+                profit_loss=profit_loss,
+                price_source=quote.source,
+            )
+
+    @staticmethod
+    def _is_mark_to_market_trade(trade: Trade) -> bool:
+        if trade.status not in {TradeStatus.PAPER, TradeStatus.SIMULATED}:
+            return False
+        if trade.executed_price is None or float(trade.executed_price) <= 0:
+            return False
+        if float(trade.amount_invested) <= 0:
+            return False
+        return trade.action == TradeAction.BUY

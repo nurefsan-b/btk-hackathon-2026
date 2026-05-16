@@ -164,7 +164,7 @@ def _build_reasoning_steps(
         ReasoningStep(
             step=3,
             title="Risk Gate",
-            description=f"Confidence score {(confidence * 100):.0f}% passed the simulated risk check.",
+            description=f"Confidence score {(confidence * 100):.0f}% passed the paper-trading risk check.",
             status="completed",
         ),
         ReasoningStep(

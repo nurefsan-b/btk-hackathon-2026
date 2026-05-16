@@ -88,4 +88,37 @@ async def test_trading_service_uses_market_price_provider(db_session):
         )
 
     assert float(trade.executed_price) == pytest.approx(12345.67)
-    assert trade.status == TradeStatus.SIMULATED
+    assert trade.status == TradeStatus.PAPER
+
+
+@pytest.mark.asyncio
+async def test_trading_service_marks_paper_trade_to_market(db_session):
+    decision = TradeDecision(
+        action="buy",
+        asset="BIST100",
+        confidence_score=0.8,
+        reasoning="Positive market signal.",
+    )
+    service = TradingService(db_session)
+    await service.execute_trade_decision(
+        user_id="paper_mark_user",
+        decision=decision,
+        amount=50.0,
+        execution_price=100.0,
+        debit_savings=False,
+    )
+
+    with patch(
+        "app.services.trading_service.get_market_price",
+        new=AsyncMock(
+            return_value=type(
+                "Quote",
+                (),
+                {"price": 110.0, "source": "test_provider"},
+            )()
+        ),
+    ):
+        trades = await service.get_trade_history("paper_mark_user")
+
+    assert len(trades) == 1
+    assert float(trades[0].profit_loss) == pytest.approx(5.0)

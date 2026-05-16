@@ -237,7 +237,7 @@ export function triggerAccumulation(userId: string) {
   );
 }
 
-/** POST /trades/trigger — dispatch the AI trading agent */
+/** POST /trades/trigger — dispatch the AI paper-trading agent */
 export function triggerAITrade(userId: string, savingId?: string) {
   return request<TriggerTradeResult>("/trades/trigger", {
     method: "POST",

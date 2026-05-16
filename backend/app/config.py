@@ -55,6 +55,7 @@ class Settings(BaseSettings):
 
     # ── Trading ────────────────────────────────────────
     mock_trading_enabled: bool = True
+    paper_trading_enabled: bool = True
     market_price_provider: str = "yahoo"
     yahoo_finance_chart_url: str = "https://query1.finance.yahoo.com/v8/finance/chart"
     market_price_cache_ttl_seconds: int = 60

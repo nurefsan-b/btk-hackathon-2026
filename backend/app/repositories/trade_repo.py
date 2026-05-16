@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,7 +48,18 @@ class TradeRepository:
         if trade:
             trade.status = status
             trade.executed_price = executed_price
-            trade.executed_at = datetime.now(timezone.utc)
+            trade.executed_at = datetime.now(UTC)
+            await self._session.flush()
+        return trade
+
+    async def update_profit_loss(
+        self,
+        trade_id: uuid.UUID,
+        profit_loss: float,
+    ) -> Trade | None:
+        trade = await self.get_by_id(trade_id)
+        if trade:
+            trade.profit_loss = profit_loss
             await self._session.flush()
         return trade
 

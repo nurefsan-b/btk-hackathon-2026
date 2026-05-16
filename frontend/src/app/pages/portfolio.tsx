@@ -46,8 +46,8 @@ export function Portfolio() {
 
     // ─── Data Mapping ──────────────────────────────────────────
 
-    const visibleTrades = trades.filter(t => ['pending', 'executed', 'simulated'].includes(t.status));
-    const activeTrades = trades.filter(t => ['executed', 'simulated'].includes(t.status));
+    const visibleTrades = trades.filter(t => ['pending', 'paper', 'executed', 'simulated'].includes(t.status));
+    const activeTrades = trades.filter(t => ['paper', 'executed', 'simulated'].includes(t.status));
     const reservedWithoutTrade = Math.max(
         (savings?.total_invested || 0) - visibleTrades.reduce((acc, t) => acc + t.amount_invested, 0),
         0,

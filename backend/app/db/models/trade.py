@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from enum import Enum as PyEnum
+from datetime import UTC, datetime
+from enum import StrEnum
 
 from sqlalchemy import DateTime, Float, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -11,14 +11,15 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 
 
-class TradeAction(str, PyEnum):
+class TradeAction(StrEnum):
     BUY = "buy"
     SELL = "sell"
     HOLD = "hold"
 
 
-class TradeStatus(str, PyEnum):
+class TradeStatus(StrEnum):
     PENDING = "pending"
+    PAPER = "paper"
     EXECUTED = "executed"
     FAILED = "failed"
     SIMULATED = "simulated"
@@ -54,7 +55,7 @@ class Trade(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     executed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

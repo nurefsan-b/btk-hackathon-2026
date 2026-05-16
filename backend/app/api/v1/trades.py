@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.dependencies import DBSession
-from app.schemas.trade import TriggerTradeRequest, TradeResponse
+from app.schemas.trade import TradeResponse, TriggerTradeRequest
 from app.services.trading_service import TradingService
 
 router = APIRouter()
@@ -17,7 +17,7 @@ router = APIRouter()
     description=(
         "Dispatches the Gemini AI agent as a Celery background task. "
         "Returns immediately with a task_id. "
-        "The agent will analyze news and execute a simulated trade asynchronously."
+        "The agent will analyze news and execute a paper trade asynchronously."
     ),
 )
 async def trigger_trade(payload: TriggerTradeRequest, db: DBSession) -> dict:
