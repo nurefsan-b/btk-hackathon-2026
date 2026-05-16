@@ -17,6 +17,13 @@ settings = get_settings()
 
 ASSET_SYMBOLS = {
     "BIST100": "XU100.IS",
+    "THYAO.IS": "THYAO.IS",
+    "ASELS.IS": "ASELS.IS",
+    "KCHOL.IS": "KCHOL.IS",
+    "SISE.IS": "SISE.IS",
+    "EREGL.IS": "EREGL.IS",
+    "GARAN.IS": "GARAN.IS",
+    "AKBNK.IS": "AKBNK.IS",
     "XAU": "GC=F",
     "USD": "TRY=X",
     "EUR": "EURTRY=X",
@@ -25,6 +32,13 @@ ASSET_SYMBOLS = {
 
 DEVELOPMENT_FALLBACK_PRICES = {
     "BIST100": 10250.0,
+    "THYAO.IS": 312.4,
+    "ASELS.IS": 82.1,
+    "KCHOL.IS": 191.7,
+    "SISE.IS": 45.2,
+    "EREGL.IS": 52.6,
+    "GARAN.IS": 98.9,
+    "AKBNK.IS": 63.4,
     "XAU": 2380.0,
     "USD": 32.5,
     "EUR": 35.1,
@@ -44,6 +58,9 @@ class MarketPrice:
     currency: str
     source: str
     fetched_at: datetime
+    previous_close: float | None = None
+    change_percent: float | None = None
+    volume: int | None = None
 
 
 class YahooMarketPriceProvider:
@@ -82,14 +99,25 @@ class YahooMarketPriceProvider:
         if raw_price is None:
             raise MarketPriceError(f"Yahoo returned no usable price for {symbol}")
 
+        previous_close = _to_float(meta.get("previousClose"))
+        price = float(raw_price)
+        change_percent = (
+            round(((price - previous_close) / previous_close) * 100, 2)
+            if previous_close and previous_close > 0
+            else None
+        )
+
         asset = self._asset_for_symbol(symbol)
         return MarketPrice(
             asset=asset,
             symbol=symbol,
-            price=float(raw_price),
+            price=price,
             currency=str(meta.get("currency") or "TRY"),
             source="yahoo",
             fetched_at=datetime.now(UTC),
+            previous_close=previous_close,
+            change_percent=change_percent,
+            volume=_to_int(meta.get("regularMarketVolume")),
         )
 
     @staticmethod
@@ -123,6 +151,9 @@ class YahooMarketPriceProvider:
                 currency=str(payload["currency"]),
                 source=str(payload["source"]),
                 fetched_at=datetime.fromisoformat(str(payload["fetched_at"])),
+                previous_close=_to_float(payload.get("previous_close")),
+                change_percent=_to_float(payload.get("change_percent")),
+                volume=_to_int(payload.get("volume")),
             )
         except Exception as exc:
             log.debug("market_price.cache_read_failed", asset=asset, error=str(exc))
@@ -144,6 +175,9 @@ class YahooMarketPriceProvider:
                         "currency": price.currency,
                         "source": price.source,
                         "fetched_at": price.fetched_at.isoformat(),
+                        "previous_close": price.previous_close,
+                        "change_percent": price.change_percent,
+                        "volume": price.volume,
                     }
                 ),
                 ttl=settings.market_price_cache_ttl_seconds,
@@ -184,4 +218,25 @@ async def get_market_price(asset: str) -> MarketPrice:
             currency="TRY",
             source="development_fallback",
             fetched_at=datetime.now(UTC),
+            previous_close=price,
+            change_percent=0.0,
+            volume=None,
         )
+
+
+def _to_float(value: object) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _to_int(value: object) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
