@@ -6,12 +6,13 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.schemas import TradeDecision
+from app.ai.price_fetcher import get_asset_price
 from app.config import get_settings
 from app.db.models.trade import Trade, TradeAction, TradeStatus
 from app.repositories.saving_entry_repo import SavingEntryRepository
 from app.repositories.saving_repo import SavingRepository
 from app.repositories.trade_repo import TradeRepository
-from app.services.market_price_provider import MarketPrice, get_market_price
+from app.repositories.user_repo import UserRepository
 
 log = structlog.get_logger()
 settings = get_settings()
@@ -31,6 +32,7 @@ class TradingService:
         self._trade_repo = TradeRepository(session)
         self._saving_repo = SavingRepository(session)
         self._saving_entries = SavingEntryRepository(session)
+        self._user_repo = UserRepository(session)
 
     async def trigger_trade(
         self, user_id: str, saving_id: uuid.UUID | None = None
@@ -105,32 +107,37 @@ class TradingService:
         if saving_id:
             await self._saving_repo.mark_as_invested(saving_id)
 
-        price_quote = (
-            await get_market_price(decision.asset)
-            if execution_price is None
-            else None
-        )
-        resolved_price = execution_price if execution_price is not None else price_quote.price
+        # Execute (mock/simulated in hackathon scope, but with real prices)
+        # ONLY if autonomous mode is enabled for the user
+        user = await self._user_repo.get_by_id(uuid.UUID(user_id))
+        
+        # Fetch real price if not provided
+        resolved_price = execution_price
+        if resolved_price is None:
+            resolved_price = await get_asset_price(decision.asset)
+
         execution_status = self._execution_status()
 
-        await self._trade_repo.mark_executed(
-            trade.id, resolved_price, execution_status
-        )
-        if debit_savings:
-            await self._saving_entries.create_investment_debit(
-                user_id=user_id,
-                amount=amount,
-                trade_id=trade.id,
-                saving_id=saving_id,
-                description=f"{execution_status.value.title()} investment in {decision.asset}",
+        if user and user.is_autonomous_enabled:
+            await self._trade_repo.mark_executed(
+                trade.id, resolved_price, execution_status
             )
-        log.info(
-            "trade.executed",
-            trade_id=str(trade.id),
-            price=resolved_price,
-            price_source=price_quote.source if price_quote else "manual",
-            status=execution_status.value,
-        )
+            if debit_savings:
+                await self._saving_entries.create_investment_debit(
+                    user_id=user_id,
+                    amount=amount,
+                    trade_id=trade.id,
+                    saving_id=saving_id,
+                    description=f"{execution_status.value.title()} investment in {decision.asset}",
+                )
+            log.info(
+                "trade.executed",
+                trade_id=str(trade.id),
+                price=resolved_price,
+                status=execution_status.value,
+            )
+        else:
+            log.info("trade.manual_approval_required", trade_id=str(trade.id))
 
         return trade
 
@@ -177,30 +184,26 @@ class TradingService:
         return TradeStatus.EXECUTED
 
     async def _mark_paper_trades_to_market(self, trades: list[Trade]) -> None:
-        quotes: dict[str, MarketPrice] = {}
         for trade in trades:
             if not self._is_mark_to_market_trade(trade):
                 continue
 
             asset = trade.asset.upper()
-            quote = quotes.get(asset)
-            if quote is None:
-                try:
-                    quote = await get_market_price(asset)
-                except Exception as exc:
-                    log.warning(
-                        "trade.mark_to_market_failed",
-                        trade_id=str(trade.id),
-                        asset=asset,
-                        error=str(exc),
-                    )
-                    continue
-                quotes[asset] = quote
+            try:
+                current_price = await get_asset_price(asset)
+            except Exception as exc:
+                log.warning(
+                    "trade.mark_to_market_failed",
+                    trade_id=str(trade.id),
+                    asset=asset,
+                    error=str(exc),
+                )
+                continue
 
             executed_price = float(trade.executed_price)
             amount_invested = float(trade.amount_invested)
             quantity = amount_invested / executed_price
-            current_value = quantity * quote.price
+            current_value = quantity * current_price
             profit_loss = round(current_value - amount_invested, 2)
             await self._trade_repo.update_profit_loss(trade.id, profit_loss)
             trade.profit_loss = profit_loss
@@ -209,9 +212,8 @@ class TradingService:
                 trade_id=str(trade.id),
                 asset=asset,
                 executed_price=executed_price,
-                current_price=quote.price,
+                current_price=current_price,
                 profit_loss=profit_loss,
-                price_source=quote.source,
             )
 
     @staticmethod
