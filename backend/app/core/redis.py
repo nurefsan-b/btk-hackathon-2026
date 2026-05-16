@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
-
-import redis.asyncio as aioredis
 import redis as sync_redis
+import redis.asyncio as aioredis
 import structlog
 
 from app.config import get_settings
@@ -88,8 +86,12 @@ class RedisCache:
         return f"savings:summary:{user_id}"
 
     @staticmethod
+    def key_market_price(asset: str) -> str:
+        return f"market:price:{asset.upper()}"
+
+    @staticmethod
     def key_mock_price(asset: str) -> str:
-        return f"market:mock_price:{asset.upper()}"
+        return RedisCache.key_market_price(asset)
 
     @staticmethod
     def key_user_tx_count(user_id: str) -> str:

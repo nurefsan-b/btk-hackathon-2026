@@ -6,12 +6,15 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.schemas import TradeDecision
+from app.config import get_settings
 from app.db.models.trade import Trade, TradeAction, TradeStatus
 from app.repositories.saving_entry_repo import SavingEntryRepository
 from app.repositories.saving_repo import SavingRepository
 from app.repositories.trade_repo import TradeRepository
+from app.services.market_price_provider import get_market_price
 
 log = structlog.get_logger()
+settings = get_settings()
 
 
 class TradingService:
@@ -67,7 +70,7 @@ class TradingService:
         decision: TradeDecision,
         amount: float,
         saving_id: uuid.UUID | None = None,
-        mock_price: float = 100.0,
+        execution_price: float | None = None,
         debit_savings: bool = True,
     ) -> Trade:
         """
@@ -102,9 +105,21 @@ class TradingService:
         if saving_id:
             await self._saving_repo.mark_as_invested(saving_id)
 
-        # Execute (mock/simulated in hackathon scope)
+        price_quote = (
+            await get_market_price(decision.asset)
+            if execution_price is None
+            else None
+        )
+        resolved_price = execution_price if execution_price is not None else price_quote.price
+        execution_status = (
+            TradeStatus.SIMULATED
+            if settings.mock_trading_enabled
+            else TradeStatus.EXECUTED
+        )
+
+        # Execute as a paper trade unless mock_trading_enabled is disabled.
         await self._trade_repo.mark_executed(
-            trade.id, mock_price, TradeStatus.SIMULATED
+            trade.id, resolved_price, execution_status
         )
         if debit_savings:
             await self._saving_entries.create_investment_debit(
@@ -114,7 +129,13 @@ class TradingService:
                 saving_id=saving_id,
                 description=f"Simulated investment in {decision.asset}",
             )
-        log.info("trade.simulated", trade_id=str(trade.id), price=mock_price)
+        log.info(
+            "trade.executed",
+            trade_id=str(trade.id),
+            price=resolved_price,
+            price_source=price_quote.source if price_quote else "manual",
+            status=execution_status.value,
+        )
 
         return trade
 
