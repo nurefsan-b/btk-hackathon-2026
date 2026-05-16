@@ -137,6 +137,35 @@ export interface AIInsightsResponse {
   reasoning_steps: ReasoningStep[];
 }
 
+export interface AnalyticsResponse {
+  generated_at: string;
+  kpis: {
+    prediction_accuracy: number;
+    accuracy_trend: string;
+    total_roundups: number;
+    roundups_trend: string;
+    next_month_forecast: number;
+    forecast_change: string;
+  };
+  sentiment_correlation: Array<{
+    date: string;
+    sentiment: number;
+    growth: number;
+  }>;
+  spare_change_sources: Array<{
+    name: string;
+    value: number;
+    amount: number;
+    color: string;
+  }>;
+  market_alerts: Array<{
+    id: string;
+    type: string;
+    message: string;
+    timestamp: string;
+  }>;
+}
+
 export interface ApiUser {
   id: string;
   email: string;
@@ -252,6 +281,10 @@ export function getTradeHistory(userId: string, limit = 20) {
 
 export function getAIInsights(userId: string) {
   return request<AIInsightsResponse>(`/ai/insights/${userId}`);
+}
+
+export function getAnalytics(userId: string) {
+  return request<AnalyticsResponse>(`/analytics/${userId}`);
 }
 
 export function changePassword(currentPassword: string, newPassword: string) {

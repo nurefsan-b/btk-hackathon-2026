@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.v1 import ai, auth, savings, trades, transactions, users
+from app.api.v1 import ai, analytics, auth, savings, trades, transactions, users
 
 api_v1_router = APIRouter()
 
@@ -36,4 +36,9 @@ api_v1_router.include_router(
     ai.router,
     prefix="/ai",
     tags=["ai"],
+)
+api_v1_router.include_router(
+    analytics.router,
+    prefix="/analytics",
+    tags=["analytics"],
 )
