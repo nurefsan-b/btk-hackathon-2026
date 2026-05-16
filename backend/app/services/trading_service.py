@@ -134,6 +134,35 @@ class TradingService:
 
         return trade
 
+    async def create_user_paper_trade(
+        self,
+        *,
+        user_id: str,
+        asset: str,
+        amount: float | None,
+        confidence_score: float,
+        reasoning: str,
+    ) -> Trade:
+        from app.ai.schemas import TradeDecision
+
+        pending_balance = await self._saving_entries.get_pending_balance(user_id)
+        resolved_amount = pending_balance if amount is None else min(amount, pending_balance)
+        if resolved_amount <= 0:
+            raise ValueError("No pending savings available for paper trading")
+
+        decision = TradeDecision(
+            action="buy",
+            asset=asset.upper(),
+            confidence_score=confidence_score,
+            reasoning=reasoning,
+        )
+        return await self.execute_trade_decision(
+            user_id=user_id,
+            decision=decision,
+            amount=resolved_amount,
+            debit_savings=True,
+        )
+
     async def get_trade_history(self, user_id: str, limit: int = 20) -> list[Trade]:
         trades = await self._trade_repo.list_by_user(user_id, limit)
         await self._mark_paper_trades_to_market(trades)

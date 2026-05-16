@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 
 from app.dependencies import DBSession
-from app.schemas.trade import TradeResponse, TriggerTradeRequest
+from app.schemas.trade import CreatePaperTradeRequest, TradeResponse, TriggerTradeRequest
 from app.services.trading_service import TradingService
 
 router = APIRouter()
@@ -23,6 +23,27 @@ router = APIRouter()
 async def trigger_trade(payload: TriggerTradeRequest, db: DBSession) -> dict:
     svc = TradingService(db)
     return await svc.trigger_trade(payload.user_id, payload.saving_id)
+
+
+@router.post(
+    "/paper",
+    response_model=TradeResponse,
+    status_code=201,
+    summary="Open a user-selected paper position",
+)
+async def create_paper_trade(payload: CreatePaperTradeRequest, db: DBSession) -> TradeResponse:
+    svc = TradingService(db)
+    try:
+        trade = await svc.create_user_paper_trade(
+            user_id=payload.user_id,
+            asset=payload.asset,
+            amount=payload.amount,
+            confidence_score=payload.confidence_score,
+            reasoning=payload.reasoning,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return TradeResponse.model_validate(trade)
 
 
 @router.get(
