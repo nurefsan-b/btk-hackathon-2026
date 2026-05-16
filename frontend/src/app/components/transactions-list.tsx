@@ -1,3 +1,4 @@
+import { type ComponentType } from 'react';
 import { ArrowRight, Coffee, Train, Video, ShoppingBag, UtensilsCrossed, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -18,8 +19,6 @@ interface TransactionsListProps {
     transactions: Transaction[];
 }
 
-import { type ComponentType } from 'react';
-
 const categoryIcons: Record<string, ComponentType<{ className?: string }>> = {
     'Food & Drink': Coffee,
     Transportation: Train,
@@ -28,6 +27,11 @@ const categoryIcons: Record<string, ComponentType<{ className?: string }>> = {
     Simulated: UtensilsCrossed,
     Investment: TrendingUp,
 };
+
+function formatLira(amount: number, sign: 'positive' | 'negative' | 'none' = 'none') {
+    const prefix = sign === 'negative' ? '-' : sign === 'positive' ? '+' : '';
+    return `${prefix}₺${Math.abs(amount).toFixed(2)}`;
+}
 
 export function TransactionsList({ transactions }: TransactionsListProps) {
     return (
@@ -74,16 +78,16 @@ export function TransactionsList({ transactions }: TransactionsListProps) {
                                     ) : (
                                         <>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm text-muted-foreground line-through">
-                                                    ₺{transaction.originalAmount.toFixed(2)}
+                                                <span className="text-sm text-red-300/80 line-through">
+                                                    {formatLira(transaction.originalAmount, 'negative')}
                                                 </span>
                                                 <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                                                <span className="text-sm">
-                                                    ₺{transaction.roundedAmount.toFixed(2)}
+                                                <span className="text-sm text-red-300">
+                                                    {formatLira(transaction.roundedAmount, 'negative')}
                                                 </span>
                                             </div>
                                             <div className="text-xs text-[#00ff88] mt-1 flex items-center justify-end gap-1">
-                                                <span>+₺{transaction.extractedAmount.toFixed(2)}</span>
+                                                <span>{formatLira(transaction.extractedAmount, 'positive')}</span>
                                                 <span className="text-muted-foreground">saved</span>
                                             </div>
                                         </>
