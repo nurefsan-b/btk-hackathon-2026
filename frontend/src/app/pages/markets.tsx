@@ -11,7 +11,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { ConnectionBanner } from '../components/connection-banner';
-import { useAuth } from '../lib/auth-context';
+import { useRequireAuth } from '../lib/use-require-auth';
 import {
   createPaperTrade,
   getAssetResearch,
@@ -121,14 +121,14 @@ function MarketGrid() {
 
 function MarketDetail({ symbol }: { symbol: string }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const user = useRequireAuth();
   const [research, setResearch] = useState<AssetResearchResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpeningTrade, setIsOpeningTrade] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
 
-  const userId = user?.id || 'user_demo';
+  const userId = user.id;
 
   const loadResearch = useCallback(async () => {
     setIsLoading(true);

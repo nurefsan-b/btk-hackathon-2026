@@ -5,14 +5,14 @@ import { SpareChangeSourcesChart } from '../components/analytics/spare-change-so
 import { AIMarketAlerts } from '../components/analytics/ai-market-alerts';
 import { ConnectionBanner } from '../components/connection-banner';
 import { getAnalytics, type AnalyticsResponse } from '../lib/api';
-import { useAuth } from '../lib/auth-context';
+import { useRequireAuth } from '../lib/use-require-auth';
 
 export function Analytics() {
-  const { user } = useAuth();
+  const user = useRequireAuth();
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
-  const userId = user?.id || 'user_demo';
+  const userId = user.id;
 
   const loadData = useCallback(async () => {
     try {

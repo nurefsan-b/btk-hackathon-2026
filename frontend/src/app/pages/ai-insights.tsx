@@ -3,16 +3,16 @@ import { BrainStatus } from '../components/ai-insights/brain-status';
 import { SentimentFeed } from '../components/ai-insights/sentiment-feed';
 import { ReasoningLog } from '../components/ai-insights/reasoning-log';
 import { ConnectionBanner } from '../components/connection-banner';
-import { useAuth } from '../lib/auth-context';
+import { useRequireAuth } from '../lib/use-require-auth';
 import { getAIInsights, type AIInsightsResponse } from '../lib/api';
 
 export function AIInsights() {
-    const { user } = useAuth();
+    const user = useRequireAuth();
     const [insights, setInsights] = useState<AIInsightsResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
 
-    const userId = user?.id || 'user_demo';
+    const userId = user.id;
 
     const loadData = useCallback(async () => {
         try {

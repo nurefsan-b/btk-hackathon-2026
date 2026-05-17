@@ -4,7 +4,7 @@ import { TransactionsList } from '../components/transactions-list';
 import { AIAgentAdvisor } from '../components/ai-agent-advisor';
 import { DemoPanel } from '../components/demo-panel';
 import { ConnectionBanner } from '../components/connection-banner';
-import { useAuth } from '../lib/auth-context';
+import { useRequireAuth } from '../lib/use-require-auth';
 import {
     createTransaction,
     getAIAdvisor,
@@ -70,7 +70,7 @@ function tradeToDisplay(trade: TradeResponse): DisplayTransaction {
 }
 
 export function Dashboard() {
-    const { user } = useAuth();
+    const user = useRequireAuth();
     const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
     const [totalSavings, setTotalSavings] = useState(0);
     const [totalInvested, setTotalInvested] = useState(0);
@@ -81,7 +81,7 @@ export function Dashboard() {
     const [advisor, setAdvisor] = useState<AIAdvisorResponse | null>(null);
     // Ref to clean up the SSE stream if the component unmounts while waiting
     const sseCleanupRef = useRef<(() => void) | null>(null);
-    const userId = user?.id ?? 'user_demo';
+    const userId = user.id;
 
     // Clean up any open SSE stream on unmount
     useEffect(() => {

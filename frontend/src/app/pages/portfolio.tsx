@@ -5,7 +5,7 @@ import { AIAgentAdvisor } from '../components/ai-agent-advisor';
 import { AssetAllocationChart } from '../components/portfolio/asset-allocation-chart';
 import { ActiveHoldingsTable } from '../components/portfolio/active-holdings-table';
 import { ConnectionBanner } from '../components/connection-banner';
-import { useAuth } from '../lib/auth-context';
+import { useRequireAuth } from '../lib/use-require-auth';
 import {
     getTradeHistory,
     getSavingsSummary,
@@ -18,7 +18,7 @@ import {
 } from '../lib/api';
 
 export function Portfolio() {
-    const { user } = useAuth();
+    const user = useRequireAuth();
     const [trades, setTrades] = useState<TradeResponse[]>([]);
     const [savings, setSavings] = useState<SavingsSummary | null>(null);
     const [advisor, setAdvisor] = useState<AIAdvisorResponse | null>(null);
@@ -27,7 +27,7 @@ export function Portfolio() {
     const [tradeStatus, setTradeStatus] = useState<'idle' | 'queued' | 'done' | 'error'>('idle');
     const sseCleanupRef = useRef<(() => void) | null>(null);
 
-    const userId = user?.id || 'user_demo';
+    const userId = user.id;
 
     // Clean up any open SSE stream on unmount
     useEffect(() => {
