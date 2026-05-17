@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { PortfolioOverview } from '../components/portfolio/portfolio-overview';
 import { AIPerformanceCard } from '../components/portfolio/ai-performance-card';
 import { AIAgentAdvisor } from '../components/ai-agent-advisor';
@@ -11,6 +11,7 @@ import {
     getSavingsSummary,
     getAIAdvisor,
     triggerAITrade,
+    watchTaskStatus,
     type AIAdvisorResponse,
     type TradeResponse,
     type SavingsSummary,
@@ -23,8 +24,17 @@ export function Portfolio() {
     const [advisor, setAdvisor] = useState<AIAdvisorResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
+    const [tradeStatus, setTradeStatus] = useState<'idle' | 'queued' | 'done' | 'error'>('idle');
+    const sseCleanupRef = useRef<(() => void) | null>(null);
 
     const userId = user?.id || 'user_demo';
+
+    // Clean up any open SSE stream on unmount
+    useEffect(() => {
+        return () => {
+            sseCleanupRef.current?.();
+        };
+    }, []);
 
     const loadData = useCallback(async () => {
         try {
@@ -151,16 +161,31 @@ export function Portfolio() {
                     advisor={advisor}
                     isOnline={isBackendOnline}
                     onApprove={async () => {
-                        // In portfolio page, we just trigger the trade if they click
-                        // (Usually they'd do it from dashboard but consistency helps)
+                        setTradeStatus('queued');
                         try {
-                            await triggerAITrade(userId);
-                            await loadData();
-                            window.setTimeout(loadData, 2500);
+                            const { task_id } = await triggerAITrade(userId);
+                            const cleanup = watchTaskStatus(task_id, {
+                                onComplete: async () => {
+                                    await loadData();
+                                    setTradeStatus('done');
+                                    window.setTimeout(() => setTradeStatus('idle'), 4000);
+                                },
+                                onError: async (reason) => {
+                                    console.error('[SSE] Portfolio trade error:', reason);
+                                    await loadData();
+                                    setTradeStatus('error');
+                                    window.setTimeout(() => setTradeStatus('idle'), 6000);
+                                },
+                            });
+                            sseCleanupRef.current = cleanup;
                         } catch (e) {
                             console.error(e);
+                            await loadData();
+                            setTradeStatus('error');
+                            window.setTimeout(() => setTradeStatus('idle'), 6000);
                         }
                     }}
+                    isLoading={tradeStatus === 'queued'}
                 />
 
                 <PortfolioOverview data={portfolioOverviewData} />

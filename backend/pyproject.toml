@@ -43,6 +43,9 @@ dependencies = [
     "structlog>=24.2.0",
     "aiosmtplib>=3.0.0",
     "yfinance>=0.2.40",
+
+    # ── Real-time / SSE ────────────────────────────────
+    "sse-starlette>=2.1.0",
 ]
 
 [project.optional-dependencies]

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { SavingsPoolCard } from '../components/savings-pool-card';
 import { TransactionsList } from '../components/transactions-list';
 import { AIAgentAdvisor } from '../components/ai-agent-advisor';
@@ -12,6 +12,7 @@ import {
     getTransactions,
     getSavingsSummary,
     triggerAITrade,
+    watchTaskStatus,
     type AIAdvisorResponse,
     type TradeResponse,
     type TransactionResponse,
@@ -76,8 +77,18 @@ export function Dashboard() {
     const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [investLoading, setInvestLoading] = useState(false);
+    const [tradeStatus, setTradeStatus] = useState<'idle' | 'queued' | 'done' | 'error'>('idle');
     const [advisor, setAdvisor] = useState<AIAdvisorResponse | null>(null);
+    // Ref to clean up the SSE stream if the component unmounts while waiting
+    const sseCleanupRef = useRef<(() => void) | null>(null);
     const userId = user?.id ?? 'user_demo';
+
+    // Clean up any open SSE stream on unmount
+    useEffect(() => {
+        return () => {
+            sseCleanupRef.current?.();
+        };
+    }, []);
 
     // ── Fetch data from backend ─────────────────────────────────
     const loadData = useCallback(async () => {
@@ -143,18 +154,39 @@ export function Dashboard() {
         }
     };
 
-    // ── Approve AI investment (triggers real AI agent) ──────────
+    // ── Approve AI investment (triggers real AI agent via SSE) ────
     const handleApproveInvestment = async () => {
         setInvestLoading(true);
+        setTradeStatus('queued');
         try {
-            await triggerAITrade(userId);
-            await loadData();
-            window.setTimeout(loadData, 2500);
+            const { task_id } = await triggerAITrade(userId);
             setIsBackendOnline(true);
+
+            // Open SSE stream — fires loadData() as soon as Celery finishes.
+            // No more guessing with setTimeout!
+            const cleanup = watchTaskStatus(task_id, {
+                onComplete: async () => {
+                    await loadData();
+                    setTradeStatus('done');
+                    setInvestLoading(false);
+                    // Reset badge after 4 s so it doesn't distract
+                    window.setTimeout(() => setTradeStatus('idle'), 4000);
+                },
+                onError: async (reason) => {
+                    console.error('[SSE] Trade error:', reason);
+                    await loadData();
+                    setTradeStatus('error');
+                    setInvestLoading(false);
+                    window.setTimeout(() => setTradeStatus('idle'), 6000);
+                },
+            });
+            // Store cleanup so we can abort if user navigates away
+            sseCleanupRef.current = cleanup;
         } catch {
             await loadData();
-        } finally {
+            setTradeStatus('error');
             setInvestLoading(false);
+            window.setTimeout(() => setTradeStatus('idle'), 6000);
         }
     };
 
@@ -170,6 +202,25 @@ export function Dashboard() {
                             Micro-Investment Agent
                         </p>
                     </div>
+                    {/* ── SSE trade status badge ───────────────── */}
+                    {tradeStatus === 'queued' && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#8b5cf6]/15 border border-[#8b5cf6]/30 text-sm text-[#c4b5fd]">
+                            <span className="w-2 h-2 rounded-full bg-[#8b5cf6] animate-pulse" />
+                            AI analiz yapıyor...
+                        </div>
+                    )}
+                    {tradeStatus === 'done' && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00ff88]/15 border border-[#00ff88]/30 text-sm text-[#00ff88]">
+                            <span className="w-2 h-2 rounded-full bg-[#00ff88]" />
+                            İşlem tamamlandı ✓
+                        </div>
+                    )}
+                    {tradeStatus === 'error' && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/15 border border-red-500/30 text-sm text-red-400">
+                            <span className="w-2 h-2 rounded-full bg-red-500" />
+                            İşlem başarısız
+                        </div>
+                    )}
                 </div>
 
                 <ConnectionBanner isOnline={isBackendOnline} />

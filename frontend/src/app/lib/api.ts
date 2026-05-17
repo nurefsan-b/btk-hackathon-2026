@@ -397,3 +397,74 @@ export async function healthCheck(): Promise<boolean> {
     return false;
   }
 }
+
+// ─── SSE Task Watcher ────────────────────────────────────────
+
+export type TaskWatcherOptions = {
+  /** Called when the Celery task completes successfully */
+  onComplete: (data: Record<string, unknown>) => void;
+  /** Called on task failure, timeout, or SSE connection error */
+  onError?: (reason: string) => void;
+};
+
+/**
+ * Opens a Server-Sent Events connection to watch a Celery task.
+ *
+ * Replaces the `window.setTimeout(loadData, 2500)` pattern.
+ * The backend emits one of three terminal events:
+ *   - trade_done    → task SUCCESS  → calls onComplete()
+ *   - trade_error   → task FAILURE  → calls onError()
+ *   - trade_timeout → 5-min timeout → calls onError()
+ *
+ * @returns A cleanup function — call it to abort the stream early (e.g. on unmount).
+ *
+ * @example
+ * const cleanup = watchTaskStatus(taskId, {
+ *   onComplete: () => loadData(),
+ *   onError: (msg) => console.error(msg),
+ * });
+ * // Later, if needed:
+ * cleanup();
+ */
+export function watchTaskStatus(
+  taskId: string,
+  { onComplete, onError }: TaskWatcherOptions,
+): () => void {
+  const url = `${API_BASE}/api/v1/trades/status/${encodeURIComponent(taskId)}/stream`;
+  const source = new EventSource(url);
+
+  source.addEventListener("trade_done", (e: MessageEvent) => {
+    source.close();
+    try {
+      const data = JSON.parse(e.data) as Record<string, unknown>;
+      onComplete(data);
+    } catch {
+      onComplete({});
+    }
+  });
+
+  source.addEventListener("trade_error", (e: MessageEvent) => {
+    source.close();
+    try {
+      const data = JSON.parse(e.data) as { error?: string };
+      onError?.(data.error ?? "Trade failed");
+    } catch {
+      onError?.("Trade failed");
+    }
+  });
+
+  source.addEventListener("trade_timeout", () => {
+    source.close();
+    onError?.("AI agent timed out — please refresh the page.");
+  });
+
+  source.onerror = () => {
+    source.close();
+    onError?.("Connection lost while waiting for the AI agent.");
+  };
+
+  // Return a cleanup function for use in React useEffect
+  return () => {
+    source.close();
+  };
+}
