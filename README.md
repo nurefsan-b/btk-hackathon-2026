@@ -59,6 +59,27 @@ The user does nothing. The AI agent reads financial news, evaluates market senti
 
 ---
 
+## 🧭 Why This Architecture?
+
+MicroFon is designed as a demo-ready but production-conscious financial workflow:
+
+- **FastAPI** keeps the API layer async, typed, and easy to document with OpenAPI.
+- **PostgreSQL** stores users, transactions, savings pools, and paper trades as durable financial records.
+- **Redis** supports Celery task brokering, short-lived 2FA/session state, and last-known-good market price caching.
+- **Celery + Celery Beat** run AI and accumulation jobs in the background so slow LLM/news/market calls do not block the user interface.
+- **Server-Sent Events (SSE)** notify the frontend when an AI trade task finishes, avoiding blind polling or fixed timeouts.
+- **Gemini via LangChain** generates structured, explainable paper-trading decisions from market/news context.
+- **NewsAPI + yfinance** provide external signals for market sentiment, asset research, and paper-trade pricing, with fallbacks for demo reliability.
+- **Traefik** gives the same app a local reverse-proxy path and a deployment-oriented routing model.
+
+The default `docker-compose.yml` is optimized for local development and demo visibility. For a tighter deployment surface, `docker-compose.prod.yml` keeps PostgreSQL, Redis, and Flower private on the Docker network and exposes only Traefik publicly.
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
