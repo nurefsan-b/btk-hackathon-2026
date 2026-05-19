@@ -1,5 +1,6 @@
 import { TrendingUp, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 interface Holding {
   id: string;
@@ -16,6 +17,32 @@ interface ActiveHoldingsTableProps {
 }
 
 export function ActiveHoldingsTable({ holdings }: ActiveHoldingsTableProps) {
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
+  // Helper to translate asset names
+  const translateAssetName = (name: string) => {
+    if (!isTurkish) return name;
+    if (name === 'AI allocation pending') return 'AI dağıtımı bekleniyor';
+    return name;
+  };
+
+  // Helper to translate return / performance
+  const translateReturn = (ret: string) => {
+    if (!isTurkish) return ret;
+    if (ret.toLowerCase() === 'pending') return 'beklemede';
+    return ret;
+  };
+
+  // Helper to translate AI outlook status
+  const translateOutlook = (outlook: string) => {
+    if (!isTurkish) return outlook;
+    if (outlook === 'Holding') return 'Beklemede';
+    if (outlook === 'Positive') return 'Pozitif';
+    if (outlook === 'Negative') return 'Negatif';
+    return outlook;
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -28,8 +55,10 @@ export function ActiveHoldingsTable({ holdings }: ActiveHoldingsTableProps) {
           <TrendingUp className="w-5 h-5 text-[#00ff88]" />
         </div>
         <div>
-          <h2 className="text-lg">Active Holdings</h2>
-          <p className="text-xs text-muted-foreground">Current investment positions</p>
+          <h2 className="text-lg">{isTurkish ? 'Aktif Paper Pozisyonlar' : 'Active Holdings'}</h2>
+          <p className="text-xs text-muted-foreground">
+            {isTurkish ? 'Mevcut yatırım dağılımları ve performans' : 'Current investment positions'}
+          </p>
         </div>
       </div>
 
@@ -37,19 +66,19 @@ export function ActiveHoldingsTable({ holdings }: ActiveHoldingsTableProps) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-border">
-              <th className="text-left py-3 px-4 text-xs text-muted-foreground">Asset Name</th>
-              <th className="text-left py-3 px-4 text-xs text-muted-foreground">Shares</th>
-              <th className="text-right py-3 px-4 text-xs text-muted-foreground">Invested</th>
-              <th className="text-right py-3 px-4 text-xs text-muted-foreground">Current Value</th>
-              <th className="text-right py-3 px-4 text-xs text-muted-foreground">Return</th>
-              <th className="text-center py-3 px-4 text-xs text-muted-foreground">AI Outlook</th>
+              <th className="text-left py-3 px-4 text-xs text-muted-foreground">{isTurkish ? 'Varlık Adı' : 'Asset Name'}</th>
+              <th className="text-left py-3 px-4 text-xs text-muted-foreground">{isTurkish ? 'Adet' : 'Shares'}</th>
+              <th className="text-right py-3 px-4 text-xs text-muted-foreground">{isTurkish ? 'Yatırılan' : 'Invested'}</th>
+              <th className="text-right py-3 px-4 text-xs text-muted-foreground">{isTurkish ? 'Güncel Değer' : 'Current Value'}</th>
+              <th className="text-right py-3 px-4 text-xs text-muted-foreground">{isTurkish ? 'Getiri' : 'Return'}</th>
+              <th className="text-center py-3 px-4 text-xs text-muted-foreground">{isTurkish ? 'AI Beklenti' : 'AI Outlook'}</th>
             </tr>
           </thead>
           <tbody>
             {holdings.length === 0 && (
               <tr>
                 <td colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                  No active investment positions yet.
+                  {isTurkish ? 'Henüz aktif bir yatırım pozisyonu bulunmuyor.' : 'No active investment positions yet.'}
                 </td>
               </tr>
             )}
@@ -66,27 +95,34 @@ export function ActiveHoldingsTable({ holdings }: ActiveHoldingsTableProps) {
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-secondary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
                       <TrendingUp className="w-4 h-4 text-secondary" />
                     </div>
-                    <span className="text-sm">{holding.name}</span>
+                    <span className="text-sm">{translateAssetName(holding.name)}</span>
                   </div>
                 </td>
                 <td className="py-4 px-4 text-sm text-muted-foreground">{holding.shares}</td>
                 <td className="py-4 px-4 text-right text-sm">₺{holding.investedAmount.toFixed(2)}</td>
                 <td className="py-4 px-4 text-right text-sm">₺{holding.currentValue.toFixed(2)}</td>
                 <td className="py-4 px-4 text-right">
-                  <span className={`text-sm ${holding.return.startsWith('+') ? 'text-[#00ff88]' : 'text-destructive'}`}>
-                    {holding.return}
+                  <span className={`text-sm ${
+                    holding.return.toLowerCase() === 'pending'
+                      ? 'text-muted-foreground'
+                      : holding.return.startsWith('+')
+                        ? 'text-[#00ff88]'
+                        : 'text-destructive'
+                  }`}>
+                    {translateReturn(holding.return)}
                   </span>
                 </td>
                 <td className="py-4 px-4">
                   <div className="flex items-center justify-center">
                     <div
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs ${holding.aiOutlook === 'Positive'
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs ${
+                        holding.aiOutlook === 'Positive'
                           ? 'bg-[#00ff88]/10 text-[#00ff88] border border-[#00ff88]/30'
                           : 'bg-accent/10 text-accent border border-accent/30'
-                        }`}
+                      }`}
                     >
                       <Sparkles className="w-3 h-3" />
-                      <span>{holding.aiOutlook}</span>
+                      <span>{translateOutlook(holding.aiOutlook)}</span>
                     </div>
                   </div>
                 </td>
@@ -98,7 +134,9 @@ export function ActiveHoldingsTable({ holdings }: ActiveHoldingsTableProps) {
 
       <div className="mt-6 bg-gradient-to-r from-muted/30 to-muted/20 rounded-lg p-4 border border-border/50">
         <p className="text-xs text-muted-foreground">
-          All positions are actively monitored by AI. Outlooks are updated based on real-time market sentiment and news analysis.
+          {isTurkish
+            ? 'Tüm pozisyonlar AI tarafından aktif olarak izlenmektedir. Beklentiler gerçek zamanlı piyasa duyarlılığı ve haber analizlerine göre güncellenir.'
+            : 'All positions are actively monitored by AI. Outlooks are updated based on real-time market sentiment and news analysis.'}
         </p>
       </div>
     </motion.div>

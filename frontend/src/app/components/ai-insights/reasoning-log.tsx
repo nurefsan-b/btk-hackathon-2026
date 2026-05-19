@@ -1,5 +1,6 @@
 import { Brain, CheckCircle2, ArrowDown } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 interface ReasoningStep {
   step: number;
@@ -13,6 +14,9 @@ interface ReasoningLogProps {
 }
 
 export function ReasoningLog({ steps }: ReasoningLogProps) {
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'completed':
@@ -51,8 +55,10 @@ export function ReasoningLog({ steps }: ReasoningLogProps) {
           <Brain className="w-5 h-5 text-[#8b5cf6]" />
         </div>
         <div>
-          <h2 className="text-lg">Recent AI Decisions & Logic</h2>
-          <p className="text-xs text-muted-foreground">Transparent reasoning chain</p>
+          <h2 className="text-lg">{isTurkish ? 'AI Karar Aşamaları & Mantığı' : 'Recent AI Decisions & Logic'}</h2>
+          <p className="text-xs text-muted-foreground">
+            {isTurkish ? 'Şeffaf gerekçe zinciri' : 'Transparent reasoning chain'}
+          </p>
         </div>
       </div>
 
@@ -81,7 +87,9 @@ export function ReasoningLog({ steps }: ReasoningLogProps) {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs text-muted-foreground">Step {step.step}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {isTurkish ? `${step.step}. Aşama` : `Step ${step.step}`}
+                      </span>
                       {step.status === 'active' && (
                         <motion.div
                           animate={{
@@ -119,7 +127,9 @@ export function ReasoningLog({ steps }: ReasoningLogProps) {
         <div className="flex items-start gap-2">
           <Brain className="w-4 h-4 text-[#8b5cf6] flex-shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground">
-            All AI decisions follow a transparent, auditable reasoning chain. Every step is logged and can be reviewed.
+            {isTurkish 
+              ? 'Tüm AI kararları şeffaf ve denetlenebilir bir gerekçe zincirini takip eder. Her adım kaydedilir ve geriye dönük incelenebilir.'
+              : 'All AI decisions follow a transparent, auditable reasoning chain. Every step is logged and can be reviewed.'}
           </p>
         </div>
       </div>

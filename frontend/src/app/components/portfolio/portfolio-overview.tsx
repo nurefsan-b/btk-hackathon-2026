@@ -1,5 +1,6 @@
 import { TrendingUp, ArrowUpRight } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 interface PortfolioOverviewProps {
   data: {
@@ -13,6 +14,9 @@ interface PortfolioOverviewProps {
 }
 
 export function PortfolioOverview({ data }: PortfolioOverviewProps) {
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -33,7 +37,7 @@ export function PortfolioOverview({ data }: PortfolioOverviewProps) {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00ff88] to-[#14b8a6] flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-[#0a0e27]" />
               </div>
-              <p className="text-sm text-muted-foreground">Total Portfolio Value</p>
+              <p className="text-sm text-muted-foreground">{t('portfolio.total_value')}</p>
             </div>
             <motion.div
               initial={{ scale: 0.95 }}
@@ -44,7 +48,10 @@ export function PortfolioOverview({ data }: PortfolioOverviewProps) {
               ₺{data.totalValue.toFixed(2)}
             </motion.div>
             <p className="text-sm text-muted-foreground mt-2">
-              From ₺{data.initialInvestment.toFixed(2)} spare change
+              {isTurkish 
+                ? `₺${data.initialInvestment.toFixed(2)} birikim havuzundan`
+                : `From ₺${data.initialInvestment.toFixed(2)} spare change`
+              }
             </p>
           </div>
 
@@ -52,7 +59,7 @@ export function PortfolioOverview({ data }: PortfolioOverviewProps) {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-4">
                 <ArrowUpRight className="w-5 h-5 text-[#00ff88]" />
-                <p className="text-sm text-muted-foreground">Total Profit/Loss</p>
+                <p className="text-sm text-muted-foreground">{t('portfolio.total_pnl')}</p>
               </div>
               <div className="space-y-2">
                 <div className="text-4xl tracking-tight text-[#00ff88]">
@@ -62,7 +69,7 @@ export function PortfolioOverview({ data }: PortfolioOverviewProps) {
                   <div className="bg-[#00ff88]/20 px-3 py-1 rounded-lg border border-[#00ff88]/30">
                     <span className="text-[#00ff88]">+{data.profitPercentage}%</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">All Time</span>
+                  <span className="text-sm text-muted-foreground">{t('common.all_time')}</span>
                 </div>
               </div>
             </div>
@@ -71,19 +78,21 @@ export function PortfolioOverview({ data }: PortfolioOverviewProps) {
 
         <div className="mt-8 grid grid-cols-3 gap-4">
           <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
-            <p className="text-xs text-muted-foreground mb-2">Today's Change</p>
+            <p className="text-xs text-muted-foreground mb-2">{isTurkish ? 'Bugünkü Değişim' : "Today's Change"}</p>
             <p className="text-lg text-[#00ff88]">₺{data.totalProfit.toFixed(2)}</p>
             <p className="text-xs text-muted-foreground mt-1">{data.profitPercentage}%</p>
           </div>
           <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
-            <p className="text-xs text-muted-foreground mb-2">AI Win Rate</p>
+            <p className="text-xs text-muted-foreground mb-2">{t('portfolio.win_rate')}</p>
             <p className="text-lg text-foreground">{data.decisionCount > 0 ? '100%' : '0%'}</p>
-            <p className="text-xs text-muted-foreground mt-1">{data.decisionCount} decisions</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {data.decisionCount} {isTurkish ? 'karar' : 'decisions'}
+            </p>
           </div>
           <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
-            <p className="text-xs text-muted-foreground mb-2">Active Positions</p>
+            <p className="text-xs text-muted-foreground mb-2">{t('portfolio.active_positions')}</p>
             <p className="text-lg text-foreground">{data.activePositions}</p>
-            <p className="text-xs text-muted-foreground mt-1">Live portfolio</p>
+            <p className="text-xs text-muted-foreground mt-1">{isTurkish ? 'Canlı portföy' : 'Live portfolio'}</p>
           </div>
         </div>
       </div>

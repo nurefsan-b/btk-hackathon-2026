@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { KPICards } from '../components/analytics/kpi-cards';
 import { SentimentCorrelationChart } from '../components/analytics/sentiment-correlation-chart';
 import { SpareChangeSourcesChart } from '../components/analytics/spare-change-sources-chart';
@@ -9,6 +10,9 @@ import { useRequireAuth } from '../lib/use-require-auth';
 
 export function Analytics() {
   const user = useRequireAuth();
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
@@ -48,7 +52,9 @@ export function Analytics() {
       <main className="flex-1 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-[#8b5cf6] border-t-transparent rounded-full animate-spin" />
-          <p className="text-muted-foreground animate-pulse">Loading analytics...</p>
+          <p className="text-muted-foreground animate-pulse">
+            {isTurkish ? 'Gelişmiş analitik yükleniyor...' : 'Loading analytics...'}
+          </p>
         </div>
       </main>
     );
@@ -59,10 +65,13 @@ export function Analytics() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="mb-8">
           <h1 className="text-3xl tracking-tight bg-gradient-to-r from-[#00ff88] to-[#8b5cf6] bg-clip-text text-transparent">
-            Analytics & AI Insights
+            {isTurkish ? 'Gelişmiş Analitik' : 'Analytics & AI Insights'}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Deep learning analysis of your financial habits and market sentiment
+            {isTurkish 
+              ? 'Harcama alışkanlıklarınız ve piyasa duyarlılığının derin öğrenme tabanlı analizi'
+              : 'Deep learning analysis of your financial habits and market sentiment'
+            }
           </p>
         </div>
 

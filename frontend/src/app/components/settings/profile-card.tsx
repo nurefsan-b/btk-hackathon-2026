@@ -2,9 +2,13 @@ import { User, LogOut, Mail, Calendar, Shield, Edit2, Check, X } from 'lucide-re
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { useAuth } from '../../lib/auth-context';
+import { useTranslation } from 'react-i18next';
 
 export function ProfileCard() {
   const { user, logout, updateProfile } = useAuth();
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -18,10 +22,16 @@ export function ProfileCard() {
     setMessage(null);
     try {
       await updateProfile({ fullName, email });
-      setMessage({ type: 'success', text: 'Profile updated successfully.' });
+      setMessage({ 
+        type: 'success', 
+        text: isTurkish ? 'Profil başarıyla güncellendi.' : 'Profile updated successfully.' 
+      });
       setIsEditing(false);
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
+      setMessage({ 
+        type: 'error', 
+        text: err.message || (isTurkish ? 'Profil güncellenemedi.' : 'Failed to update profile.') 
+      });
     } finally {
       setIsSaving(false);
     }
@@ -31,6 +41,18 @@ export function ProfileCard() {
     setFullName(user.fullName);
     setEmail(user.email);
     setIsEditing(false);
+  };
+
+  // Helper to translate risk profile value from backend
+  const translateRisk = (risk: string) => {
+    if (!isTurkish) return risk;
+    const map: Record<string, string> = {
+      conservative: 'Muhafazakar',
+      moderate: 'Dengeli',
+      growth: 'Büyüme Odaklı',
+      aggressive: 'Agresif'
+    };
+    return map[risk.toLowerCase()] || risk;
   };
 
   return (
@@ -45,7 +67,7 @@ export function ProfileCard() {
       <div className="relative z-10">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#00ff88] to-[#8b5cf6] flex items-center justify-center text-3xl font-bold text-[#0a0e27]">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#00ff88] to-[#8b5cf6] flex items-center justify-center text-3xl font-bold text-[#0a0e27] flex-shrink-0">
               {user.fullName.charAt(0)}
             </div>
             <div className="flex-1">
@@ -63,7 +85,7 @@ export function ProfileCard() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="bg-muted/50 border border-border rounded-lg px-3 py-1.5 text-lg font-semibold w-full focus:outline-none focus:ring-2 focus:ring-[#00ff88]/50"
-                      placeholder="Full Name"
+                      placeholder={isTurkish ? 'Ad Soyad' : 'Full Name'}
                     />
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4 text-muted-foreground" />
@@ -72,7 +94,7 @@ export function ProfileCard() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="bg-muted/50 border border-border rounded-lg px-3 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#00ff88]/50"
-                        placeholder="Email"
+                        placeholder={isTurkish ? 'E-posta' : 'Email'}
                       />
                     </div>
                   </motion.div>
@@ -82,6 +104,7 @@ export function ProfileCard() {
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
+                    className="text-left"
                   >
                     <h2 className="text-2xl font-semibold mb-1 flex items-center gap-3">
                       {user.fullName}
@@ -92,14 +115,17 @@ export function ProfileCard() {
                         <Edit2 className="w-4 h-4" />
                       </button>
                     </h2>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Mail className="w-4 h-4" />
                         {user.email}
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        Joined {new Date(user.createdAt).toLocaleDateString()}
+                        {isTurkish 
+                          ? `${new Date(user.createdAt).toLocaleDateString()} tarihinde katıldı`
+                          : `Joined ${new Date(user.createdAt).toLocaleDateString()}`
+                        }
                       </div>
                     </div>
                   </motion.div>
@@ -117,52 +143,57 @@ export function ProfileCard() {
                   className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#00ff88] text-[#0a0e27] transition-all hover:scale-105 active:scale-95 text-sm font-medium"
                 >
                   <Check className="w-4 h-4" />
-                  {isSaving ? 'Saving...' : 'Save Changes'}
+                  {isSaving ? (isTurkish ? 'Kaydediliyor...' : 'Saving...') : (isTurkish ? 'Kaydet' : 'Save Changes')}
                 </button>
                 <button
                   onClick={handleCancel}
                   className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-all text-sm font-medium"
                 >
                   <X className="w-4 h-4" />
-                  Cancel
+                  {isTurkish ? 'İptal' : 'Cancel'}
                 </button>
               </div>
             ) : (
               <button
                 onClick={logout}
-                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 transition-all hover:scale-105 active:scale-95"
+                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 transition-all hover:scale-105 active:scale-95 font-medium"
               >
                 <LogOut className="w-5 h-5" />
-                <span>Sign Out</span>
+                <span>{isTurkish ? 'Çıkış Yap' : 'Sign Out'}</span>
               </button>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 text-left">
           <div className="bg-muted/20 rounded-xl p-4 border border-border/50">
             <div className="flex items-center gap-3 mb-2">
               <Shield className="w-5 h-5 text-[#00ff88]" />
-              <h3 className="text-sm font-medium">Risk Profile</h3>
+              <h3 className="text-sm font-medium">{isTurkish ? 'Risk Profili' : 'Risk Profile'}</h3>
             </div>
-            <p className="text-lg text-foreground capitalize">{user.riskProfile}</p>
-            <p className="text-xs text-muted-foreground mt-1">Based on your initial configuration</p>
+            <p className="text-lg text-foreground capitalize">{translateRisk(user.riskProfile)}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {isTurkish ? 'İlk yaptığınız yapılandırmaya dayanır' : 'Based on your initial configuration'}
+            </p>
           </div>
           <div className="bg-muted/20 rounded-xl p-4 border border-border/50">
             <div className="flex items-center gap-3 mb-2">
               <User className="w-5 h-5 text-secondary" />
-              <h3 className="text-sm font-medium">Account Security</h3>
+              <h3 className="text-sm font-medium">{isTurkish ? 'Hesap Durumu' : 'Account Security'}</h3>
             </div>
-            <p className="text-lg text-foreground">Verified</p>
+            <p className="text-lg text-foreground">{isTurkish ? 'Doğrulandı' : 'Verified'}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {user.is2FAEnabled ? 'Your account is secured with 2FA' : '2FA is currently disabled'}
+              {user.is2FAEnabled 
+                ? (isTurkish ? 'Hesabınız iki aşamalı doğrulama (2FA) ile korunuyor' : 'Your account is secured with 2FA')
+                : (isTurkish ? 'İki aşamalı doğrulama şu an devre dışı' : '2FA is currently disabled')
+              }
             </p>
           </div>
         </div>
 
         {message && (
           <div
-            className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
+            className={`mt-4 rounded-xl border px-4 py-3 text-sm text-left ${
               message.type === 'success'
                 ? 'border-[#00ff88]/30 bg-[#00ff88]/10 text-[#00ff88]'
                 : 'border-red-500/30 bg-red-500/10 text-red-500'

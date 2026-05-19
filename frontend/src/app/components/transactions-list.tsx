@@ -1,6 +1,7 @@
 import { type ComponentType } from 'react';
 import { ArrowRight, Coffee, Train, Video, ShoppingBag, UtensilsCrossed, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 interface Transaction {
     id: string;
@@ -28,24 +29,40 @@ const categoryIcons: Record<string, ComponentType<{ className?: string }>> = {
     Investment: TrendingUp,
 };
 
+const categoryTranslations: Record<string, string> = {
+    'Food & Drink': 'Yemek & İçecek',
+    Transportation: 'Ulaşım',
+    Entertainment: 'Eğlence',
+    Shopping: 'Alışveriş',
+    Simulated: 'Simülasyon',
+    Investment: 'Yatırım',
+};
+
 function formatLira(amount: number, sign: 'positive' | 'negative' | 'none' = 'none') {
     const prefix = sign === 'negative' ? '-' : sign === 'positive' ? '+' : '';
     return `${prefix}₺${Math.abs(amount).toFixed(2)}`;
 }
 
 export function TransactionsList({ transactions }: TransactionsListProps) {
+    const { t, i18n } = useTranslation();
+    const isTurkish = i18n.language.startsWith('tr');
+
     return (
         <div className="rounded-2xl bg-card border border-border p-6 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl">Recent Transactions</h2>
+                <h2 className="text-xl">{t('dashboard.recent_transactions')}</h2>
                 <span className="text-sm text-muted-foreground">
-                    {transactions.length} transactions
+                    {transactions.length} {isTurkish ? 'işlem' : 'transactions'}
                 </span>
             </div>
 
             <div className="space-y-3">
                 {transactions.map((transaction, index) => {
                     const Icon = categoryIcons[transaction.category] || ShoppingBag;
+                    const translatedCategory = isTurkish 
+                        ? (categoryTranslations[transaction.category] || transaction.category)
+                        : transaction.category;
+                        
                     return (
                         <motion.div
                             key={transaction.id}
@@ -60,7 +77,7 @@ export function TransactionsList({ transactions }: TransactionsListProps) {
                                 </div>
                                 <div className="flex-1">
                                     <p className="text-sm mb-1">{transaction.name}</p>
-                                    <p className="text-xs text-muted-foreground">{transaction.category}</p>
+                                    <p className="text-xs text-muted-foreground">{translatedCategory}</p>
                                 </div>
                             </div>
 
@@ -78,17 +95,17 @@ export function TransactionsList({ transactions }: TransactionsListProps) {
                                     ) : (
                                         <>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm text-red-300/80 line-through">
+                                                <span className="text-sm text-muted-foreground/80 line-through">
                                                     {formatLira(transaction.originalAmount, 'negative')}
                                                 </span>
                                                 <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                                                <span className="text-sm text-red-300">
+                                                <span className="text-sm text-foreground">
                                                     {formatLira(transaction.roundedAmount, 'negative')}
                                                 </span>
                                             </div>
                                             <div className="text-xs text-[#00ff88] mt-1 flex items-center justify-end gap-1">
                                                 <span>{formatLira(transaction.extractedAmount, 'positive')}</span>
-                                                <span className="text-muted-foreground">saved</span>
+                                                <span className="text-muted-foreground">{isTurkish ? 'biriktirildi' : 'saved'}</span>
                                             </div>
                                         </>
                                     )}

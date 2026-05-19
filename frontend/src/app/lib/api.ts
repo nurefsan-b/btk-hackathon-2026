@@ -294,22 +294,22 @@ export function getCurrentUser() {
   return request<ApiUser>("/auth/me");
 }
 
-/** GET /transactions/{userId} — fetch recent transactions */
-export function getTransactions(userId: string, limit = 50) {
+/** GET /transactions/ — fetch recent transactions */
+export function getTransactions(_userId: string, limit = 50) {
   return request<TransactionResponse[]>(
-    `/transactions/${userId}?limit=${limit}`,
+    `/transactions/?limit=${limit}`,
   );
 }
 
-/** GET /savings/{userId} — fetch savings summary (pending + invested) */
-export function getSavingsSummary(userId: string) {
-  return request<SavingsSummary>(`/savings/${userId}`);
+/** GET /savings/ — fetch savings summary (pending + invested) */
+export function getSavingsSummary(_userId: string) {
+  return request<SavingsSummary>(`/savings/`);
 }
 
-/** POST /savings/{userId}/accumulate — manually trigger weekly roll-up */
-export function triggerAccumulation(userId: string) {
+/** POST /savings/accumulate — manually trigger weekly roll-up */
+export function triggerAccumulation(_userId: string) {
   return request<{ saving_id?: string; total_amount?: number; message?: string }>(
-    `/savings/${userId}/accumulate`,
+    `/savings/accumulate`,
     { method: "POST" },
   );
 }
@@ -322,21 +322,21 @@ export function triggerAITrade(userId: string, savingId?: string) {
   });
 }
 
-/** GET /trades/{userId} — fetch trade history */
-export function getTradeHistory(userId: string, limit = 20) {
-  return request<TradeResponse[]>(`/trades/${userId}?limit=${limit}`);
+/** GET /trades/ — fetch trade history */
+export function getTradeHistory(_userId: string, limit = 20) {
+  return request<TradeResponse[]>(`/trades/?limit=${limit}`);
 }
 
-export function getAIInsights(userId: string) {
-  return request<AIInsightsResponse>(`/ai/insights/${userId}`);
+export function getAIInsights(_userId: string) {
+  return request<AIInsightsResponse>(`/ai/insights`);
 }
 
-export function getAIAdvisor(userId: string) {
-  return request<AIAdvisorResponse>(`/ai/advisor/${userId}`);
+export function getAIAdvisor(_userId: string) {
+  return request<AIAdvisorResponse>(`/ai/advisor`);
 }
 
-export function getAnalytics(userId: string) {
-  return request<AnalyticsResponse>(`/analytics/${userId}`);
+export function getAnalytics(_userId: string) {
+  return request<AnalyticsResponse>(`/analytics/`);
 }
 
 export function getMarketAssets() {

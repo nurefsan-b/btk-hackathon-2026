@@ -3,9 +3,13 @@ import { Shield, Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-rea
 import { motion, AnimatePresence } from 'motion/react';
 import { changePassword } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
+import { useTranslation } from 'react-i18next';
 
 export function SecuritySettings() {
     const { user, setTwoFactorEnabled } = useAuth();
+    const { t, i18n } = useTranslation();
+    const isTurkish = i18n.language.startsWith('tr');
+
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -19,7 +23,10 @@ export function SecuritySettings() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newPassword !== confirmPassword) {
-            setMessage({ type: 'error', text: 'New passwords do not match.' });
+            setMessage({ 
+                type: 'error', 
+                text: isTurkish ? 'Yeni şifreler eşleşmiyor.' : 'New passwords do not match.' 
+            });
             return;
         }
         
@@ -28,12 +35,18 @@ export function SecuritySettings() {
         
         try {
             await changePassword(currentPassword, newPassword);
-            setMessage({ type: 'success', text: 'Password updated successfully!' });
+            setMessage({ 
+                type: 'success', 
+                text: isTurkish ? 'Şifreniz başarıyla güncellendi!' : 'Password updated successfully!' 
+            });
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
         } catch (err: any) {
-            setMessage({ type: 'error', text: err.message || 'Failed to update password.' });
+            setMessage({ 
+                type: 'error', 
+                text: err.message || (isTurkish ? 'Şifre güncellenemedi.' : 'Failed to update password.') 
+            });
         } finally {
             setIsLoading(false);
         }
@@ -47,10 +60,15 @@ export function SecuritySettings() {
             await setTwoFactorEnabled(!user.is2FAEnabled);
             setMessage({
                 type: 'success',
-                text: `Two-factor authentication ${user.is2FAEnabled ? 'disabled' : 'enabled'} successfully.`,
+                text: isTurkish 
+                    ? `İki aşamalı doğrulama başarıyla ${user.is2FAEnabled ? 'devre dışı bırakıldı' : 'etkinleştirildi'}.`
+                    : `Two-factor authentication ${user.is2FAEnabled ? 'disabled' : 'enabled'} successfully.`,
             });
         } catch (err: any) {
-            setMessage({ type: 'error', text: err.message || 'Failed to update 2FA.' });
+            setMessage({ 
+                type: 'error', 
+                text: err.message || (isTurkish ? '2FA güncellenemedi.' : 'Failed to update 2FA.') 
+            });
         } finally {
             setIs2FALoading(false);
         }
@@ -60,13 +78,13 @@ export function SecuritySettings() {
         <div className="space-y-6">
             <div className="flex items-center gap-3 mb-2">
                 <Shield className="w-6 h-6 text-[#00ff88]" />
-                <h2 className="text-xl font-semibold text-foreground">Security & Password</h2>
+                <h2 className="text-xl font-semibold text-foreground">{isTurkish ? 'Güvenlik & Şifre' : 'Security & Password'}</h2>
             </div>
 
             <div className="rounded-2xl bg-card border border-border p-6 backdrop-blur-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#8b5cf6]/5 to-[#00ff88]/5 rounded-full blur-3xl"></div>
                 
-                <form onSubmit={handleSubmit} className="max-w-md space-y-5 relative z-10">
+                <form onSubmit={handleSubmit} className="max-w-md space-y-5 relative z-10 text-left">
                     <AnimatePresence mode="wait">
                         {message && (
                             <motion.div
@@ -86,7 +104,7 @@ export function SecuritySettings() {
                     </AnimatePresence>
 
                     <div>
-                        <label className="block text-sm font-medium mb-2">Current Password</label>
+                        <label className="block text-sm font-medium mb-2">{isTurkish ? 'Mevcut Şifre' : 'Current Password'}</label>
                         <div className="relative">
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <input
@@ -108,7 +126,7 @@ export function SecuritySettings() {
 
                     <div className="grid grid-cols-1 gap-5">
                         <div>
-                            <label className="block text-sm font-medium mb-2">New Password</label>
+                            <label className="block text-sm font-medium mb-2">{isTurkish ? 'Yeni Şifre' : 'New Password'}</label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                 <input
@@ -130,7 +148,7 @@ export function SecuritySettings() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-2">Confirm New Password</label>
+                            <label className="block text-sm font-medium mb-2">{isTurkish ? 'Yeni Şifreyi Onayla' : 'Confirm New Password'}</label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                 <input
@@ -149,19 +167,19 @@ export function SecuritySettings() {
                         disabled={isLoading}
                         className="bg-gradient-to-r from-[#00ff88] to-[#14b8a6] hover:from-[#00ff88]/90 hover:to-[#14b8a6]/90 text-[#0a0e27] px-6 py-2.5 rounded-xl font-medium transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-[#00ff88]/20"
                     >
-                        {isLoading ? 'Updating...' : 'Update Password'}
+                        {isLoading ? (isTurkish ? 'Güncelleniyor...' : 'Updating...') : (isTurkish ? 'Şifreyi Güncelle' : 'Update Password')}
                     </button>
                 </form>
             </div>
 
-            <div className="rounded-2xl bg-card border border-border p-6 backdrop-blur-sm">
+            <div className="rounded-2xl bg-card border border-border p-6 backdrop-blur-sm text-left">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h3 className="text-sm font-medium">Two-Factor Authentication</h3>
+                        <h3 className="text-sm font-medium">{isTurkish ? 'İki Aşamalı Doğrulama (2FA)' : 'Two-Factor Authentication'}</h3>
                         <p className="text-xs text-muted-foreground mt-1">
                             {user?.is2FAEnabled
-                                ? 'Extra sign-in protection is enabled for this account.'
-                                : 'Enable an additional verification step for sensitive actions.'}
+                                ? (isTurkish ? 'Bu hesap için ekstra giriş koruması etkinleştirildi.' : 'Extra sign-in protection is enabled for this account.')
+                                : (isTurkish ? 'Hassas işlemler için ek bir doğrulama adımı etkinleştirin.' : 'Enable an additional verification step for sensitive actions.')}
                         </p>
                     </div>
                     <button
@@ -175,10 +193,10 @@ export function SecuritySettings() {
                         }`}
                     >
                         {is2FALoading
-                            ? 'Updating...'
+                            ? (isTurkish ? 'Güncelleniyor...' : 'Updating...')
                             : user?.is2FAEnabled
-                                ? 'Disable 2FA'
-                                : 'Enable 2FA'}
+                                ? (isTurkish ? '2FA Devre Dışı Bırak' : 'Disable 2FA')
+                                : (isTurkish ? '2FA Etkinleştir' : 'Enable 2FA')}
                     </button>
                 </div>
             </div>

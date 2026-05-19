@@ -1,5 +1,6 @@
 import { Brain, Sparkles, TrendingUp, Calendar } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 interface AIDecision {
   id: string;
@@ -15,6 +16,34 @@ interface AIPerformanceCardProps {
 }
 
 export function AIPerformanceCard({ decisions }: AIPerformanceCardProps) {
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
+  // Helper to translate status/performance text
+  const translatePerformance = (perf: string) => {
+    if (!isTurkish) return perf;
+    if (perf.toLowerCase() === 'pending') return 'beklemede';
+    if (perf.toLowerCase() === 'paper') return 'paper işlem';
+    if (perf.toLowerCase() === 'executed') return 'gerçekleşti';
+    if (perf.toLowerCase() === 'simulated') return 'simüle edildi';
+    return perf;
+  };
+
+  // Helper to translate backend fallback reason
+  const translateReason = (reasonText: string) => {
+    if (!isTurkish) return reasonText;
+    if (reasonText.includes('Gemini analysis was unavailable')) {
+      return 'Gemini analizi geçici olarak kullanılamadı, önbellek verileriyle karar verildi.';
+    }
+    if (reasonText.includes('Market sentiment is constructive')) {
+      return 'Piyasa sinyalleri yapıcı görünüyor, dengeli dağılım öneriliyor.';
+    }
+    if (reasonText.includes('Market sentiment is bullish')) {
+      return 'Piyasa sinyalleri yükseliş yönünde, aktif alım fırsatı tespit edildi.';
+    }
+    return reasonText;
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -34,22 +63,22 @@ export function AIPerformanceCard({ decisions }: AIPerformanceCardProps) {
               <Brain className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl">AI Agent Decisions</h2>
+              <h2 className="text-xl">{isTurkish ? 'AI Karar Geçmişi' : 'AI Agent Decisions'}</h2>
               <p className="text-xs text-muted-foreground mt-1">
-                Autonomous investments driven by news analysis
+                {isTurkish ? 'Haber analizi destekli otonom paper yatırımlar' : 'Autonomous investments driven by news analysis'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 bg-[#00ff88]/10 px-3 py-1.5 rounded-lg border border-[#00ff88]/30">
             <div className="w-2 h-2 rounded-full bg-[#00ff88] animate-pulse"></div>
-            <span className="text-xs text-[#00ff88]">Active</span>
+            <span className="text-xs text-[#00ff88]">{isTurkish ? 'Aktif' : 'Active'}</span>
           </div>
         </div>
 
         <div className="space-y-4">
           {decisions.length === 0 && (
             <div className="rounded-xl border border-border/50 bg-muted/20 p-6 text-center text-sm text-muted-foreground">
-              No AI investment decisions yet.
+              {isTurkish ? 'Henüz bir AI yatırım kararı bulunmuyor.' : 'No AI investment decisions yet.'}
             </div>
           )}
           {decisions.map((decision, index) => (
@@ -68,13 +97,22 @@ export function AIPerformanceCard({ decisions }: AIPerformanceCardProps) {
                     <div className="flex items-center gap-2 mb-1">
                       <TrendingUp className="w-4 h-4 text-[#00ff88]" />
                       <span className="text-sm">
-                        Invested <span className="text-[#00ff88]">₺{decision.amount.toFixed(2)}</span> in{' '}
-                        <span className="text-secondary">{decision.asset}</span>
+                        {isTurkish ? (
+                          <>
+                            <span className="text-secondary">{decision.asset}</span> varlığına{' '}
+                            <span className="text-[#00ff88]">₺{decision.amount.toFixed(2)}</span> yatırıldı
+                          </>
+                        ) : (
+                          <>
+                            Invested <span className="text-[#00ff88]">₺{decision.amount.toFixed(2)}</span> in{' '}
+                            <span className="text-secondary">{decision.asset}</span>
+                          </>
+                        )}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Calendar className="w-3 h-3" />
-                      <span>{new Date(decision.date).toLocaleDateString('tr-TR', {
+                      <span>{new Date(decision.date).toLocaleDateString(isTurkish ? 'tr-TR' : 'en-US', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
@@ -82,8 +120,14 @@ export function AIPerformanceCard({ decisions }: AIPerformanceCardProps) {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className={`text-sm ${decision.performance.startsWith('+') ? 'text-[#00ff88]' : 'text-destructive'}`}>
-                      {decision.performance}
+                    <div className={`text-sm font-medium ${
+                      decision.performance.toLowerCase() === 'pending'
+                        ? 'text-muted-foreground'
+                        : decision.performance.startsWith('+')
+                          ? 'text-[#00ff88]'
+                          : 'text-destructive'
+                    }`}>
+                      {translatePerformance(decision.performance)}
                     </div>
                   </div>
                 </div>
@@ -91,7 +135,7 @@ export function AIPerformanceCard({ decisions }: AIPerformanceCardProps) {
                 <div className="flex items-center gap-2 bg-accent/10 px-3 py-2 rounded-lg border border-accent/20">
                   <Sparkles className="w-3.5 h-3.5 text-accent" />
                   <span className="text-xs text-accent-foreground">
-                    <span className="text-muted-foreground">Reason:</span> {decision.reason}
+                    <span className="text-muted-foreground">{isTurkish ? 'Gerekçe:' : 'Reason:'}</span> {translateReason(decision.reason)}
                   </span>
                 </div>
               </div>
@@ -104,7 +148,9 @@ export function AIPerformanceCard({ decisions }: AIPerformanceCardProps) {
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#00ff88]" />
               <span className="text-sm text-muted-foreground">
-                All decisions are made autonomously based on real-time sentiment analysis
+                {isTurkish
+                  ? 'Tüm kararlar, gerçek zamanlı piyasa analizlerine dayalı karar destek mekanizmaları ile otonom üretilir.'
+                  : 'All decisions are made autonomously based on real-time sentiment analysis'}
               </span>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -20,10 +21,10 @@ import {
   type MarketAsset,
 } from '../lib/api';
 
-const recommendationLabels = {
-  paper_buy: 'Paper Buy Signal',
-  watch: 'Watch',
-  hold: 'Hold',
+const recommendationLabels: Record<string, { en: string; tr: string }> = {
+  paper_buy: { en: 'Paper Buy Signal', tr: 'Paper Alım Sinyali' },
+  watch: { en: 'Watch', tr: 'İzleme Listesi' },
+  hold: { en: 'Hold', tr: 'Bekleme' },
 };
 
 export function Markets() {
@@ -34,6 +35,9 @@ export function Markets() {
 
 function MarketGrid() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
   const [assets, setAssets] = useState<MarketAsset[]>([]);
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -63,15 +67,15 @@ function MarketGrid() {
   }, []);
 
   if (isLoading) {
-    return <MarketLoading label="Loading markets..." />;
+    return <MarketLoading label={isTurkish ? 'Piyasalar yükleniyor...' : 'Loading markets...'} />;
   }
 
   return (
     <main className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10">
       <div className="max-w-7xl mx-auto space-y-6">
         <PageHeader
-          title="Markets"
-          description="Browse supported assets one by one, then open a quote, news, and AI signal detail view."
+          title={t('markets.title')}
+          description={t('markets.subtitle')}
         />
 
         <ConnectionBanner isOnline={isBackendOnline} />
@@ -82,7 +86,7 @@ function MarketGrid() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search symbol, company, asset type"
+              placeholder={isTurkish ? 'Sembol, şirket veya varlık türü ara...' : 'Search symbol, company, asset type'}
               className="w-full bg-input-background border border-border rounded-lg pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50"
             />
           </div>
@@ -107,7 +111,8 @@ function MarketGrid() {
 
               <div className="flex items-center justify-between mt-7">
                 <span className="text-[10px] uppercase tracking-wider text-secondary">
-                  {asset.assetType}
+                  {asset.assetType === 'Crypto' && isTurkish ? 'Kripto' : 
+                   asset.assetType === 'Commodity' && isTurkish ? 'Emtia' : asset.assetType}
                 </span>
                 <span className="text-xs text-muted-foreground">{asset.currency}</span>
               </div>
@@ -122,6 +127,9 @@ function MarketGrid() {
 function MarketDetail({ symbol }: { symbol: string }) {
   const navigate = useNavigate();
   const user = useRequireAuth();
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
   const [research, setResearch] = useState<AssetResearchResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpeningTrade, setIsOpeningTrade] = useState(false);
@@ -129,6 +137,42 @@ function MarketDetail({ symbol }: { symbol: string }) {
   const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
 
   const userId = user.id;
+
+  const translateAISummary = (summary: string) => {
+    if (!isTurkish) return summary;
+    if (summary.includes('market sentiment is constructive')) {
+      return 'BIST100 için piyasa sinyalleri yapıcı görünüyor. AI Danışman dengeli bir dağılım öneriyor.';
+    }
+    if (summary.includes('market sentiment is bullish')) {
+      return 'Altın (XAU) için piyasa duyarlılığı oldukça olumlu. Güçlü bir alım sinyali mevcut.';
+    }
+    if (summary.includes('market sentiment is bearish')) {
+      return 'Kripto piyasasında risk sinyalleri algılandı. AI Danışman temkinli olmayı ve beklemede kalmayı öneriyor.';
+    }
+    return summary;
+  };
+
+  const translateNewsDescription = (desc: string) => {
+    if (!isTurkish || !desc) return desc;
+    if (desc.includes('positive market close')) {
+      return 'Pozitif piyasa kapanışının ardından BIST100 endeksinde yukarı yönlü hareket beklentisi artıyor.';
+    }
+    if (desc.includes('global risk appetite')) {
+      return 'Küresel piyasalardaki risk iştahı değişikliklerine paralel olarak altın fiyatları yatay seyrini sürdürüyor.';
+    }
+    return desc;
+  };
+
+  const translateNewsTitle = (title: string) => {
+    if (!isTurkish) return title;
+    if (title.includes('BIST100 momentum improves')) {
+      return 'Pozitif Kapanış Sonrası BIST100 İvmesi Güçleniyor';
+    }
+    if (title.includes('Gold steadies')) {
+      return 'Küresel Risk İştahındaki Dalgalanmalarla Altın Dengeleniyor';
+    }
+    return title;
+  };
 
   const loadResearch = useCallback(async () => {
     setIsLoading(true);
@@ -140,11 +184,11 @@ function MarketDetail({ symbol }: { symbol: string }) {
       console.error('Asset research load error:', err);
       setResearch(null);
       setIsBackendOnline(false);
-      setMessage('Asset research is unavailable right now.');
+      setMessage(isTurkish ? 'Varlık araştırmasına şu an erişilemiyor.' : 'Asset research is unavailable right now.');
     } finally {
       setIsLoading(false);
     }
-  }, [symbol]);
+  }, [symbol, isTurkish]);
 
   useEffect(() => {
     loadResearch();
@@ -161,17 +205,25 @@ function MarketDetail({ symbol }: { symbol: string }) {
         confidence_score: research.confidenceScore,
         reasoning: research.aiSummary,
       });
-      setMessage(`Opened a ${research.asset} paper position from pending savings.`);
+      setMessage(
+        isTurkish 
+          ? `Birikim havuzundan ${research.asset} için manuel paper işlem açıldı.` 
+          : `Opened a ${research.asset} paper position from pending savings.`
+      );
     } catch (err) {
       console.error('Paper trade error:', err);
-      setMessage('Paper trade could not be opened. Check pending savings first.');
+      setMessage(
+        isTurkish 
+          ? 'Paper işlem açılamadı. Lütfen önce birikim havuzunda yeterli bakiye olduğundan emin olun.' 
+          : 'Paper trade could not be opened. Check pending savings first.'
+      );
     } finally {
       setIsOpeningTrade(false);
     }
   };
 
   if (isLoading) {
-    return <MarketLoading label={`Loading ${symbol}...`} />;
+    return <MarketLoading label={isTurkish ? `${symbol} yükleniyor...` : `Loading ${symbol}...`} />;
   }
 
   return (
@@ -182,14 +234,16 @@ function MarketDetail({ symbol }: { symbol: string }) {
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to markets</span>
+          <span>{isTurkish ? 'Piyasalara Geri Dön' : 'Back to markets'}</span>
         </button>
 
         <ConnectionBanner isOnline={isBackendOnline} />
 
         {!research ? (
           <div className="rounded-2xl bg-card border border-border p-8">
-            <p className="text-sm text-muted-foreground">{message ?? 'Asset detail unavailable.'}</p>
+            <p className="text-sm text-muted-foreground">
+              {message ?? (isTurkish ? 'Varlık detayları mevcut değil.' : 'Asset detail unavailable.')}
+            </p>
           </div>
         ) : (
           <>
@@ -213,9 +267,13 @@ function MarketDetail({ symbol }: { symbol: string }) {
                 </div>
 
                 <div className="grid grid-cols-3 gap-3 min-w-full lg:min-w-[420px]">
-                  <Metric label="Previous" value={research.previousClose?.toFixed(2) ?? '-'} />
-                  <Metric label="Volume" value={research.volume?.toLocaleString() ?? '-'} />
-                  <Metric label="Risk" value={research.riskLevel} />
+                  <Metric label={isTurkish ? 'Önceki Kapanış' : 'Previous'} value={research.previousClose?.toFixed(2) ?? '-'} />
+                  <Metric label={isTurkish ? 'Hacim' : 'Volume'} value={research.volume?.toLocaleString() ?? '-'} />
+                  <Metric label={isTurkish ? 'Risk' : 'Risk'} value={
+                    isTurkish 
+                      ? (research.riskLevel === 'High' ? 'Yüksek' : research.riskLevel === 'Medium' ? 'Orta' : 'Düşük')
+                      : research.riskLevel
+                  } />
                 </div>
               </div>
             </section>
@@ -225,18 +283,20 @@ function MarketDetail({ symbol }: { symbol: string }) {
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <TrendingUp className="w-5 h-5 text-[#00ff88]" />
-                    <h2 className="text-lg">AI Market Signal</h2>
+                    <h2 className="text-lg">{isTurkish ? 'AI Piyasa Sinyali' : 'AI Market Signal'}</h2>
                   </div>
                   <p className="text-sm leading-relaxed text-muted-foreground max-w-3xl">
-                    {research.aiSummary}
+                    {translateAISummary(research.aiSummary)}
                   </p>
                 </div>
 
                 <div className="rounded-xl bg-muted/25 border border-border/50 p-4 min-w-[250px]">
-                  <p className="text-xs text-muted-foreground">Recommendation</p>
-                  <p className="text-lg mt-1">{recommendationLabels[research.recommendation]}</p>
+                  <p className="text-xs text-muted-foreground">{isTurkish ? 'Öneri' : 'Recommendation'}</p>
+                  <p className="text-lg mt-1">
+                    {isTurkish ? recommendationLabels[research.recommendation]?.tr : recommendationLabels[research.recommendation]?.en}
+                  </p>
                   <p className="text-xs text-[#00ff88] mt-2">
-                    Confidence {Math.round(research.confidenceScore * 100)}%
+                    {isTurkish ? 'Güven Derecesi' : 'Confidence'} {Math.round(research.confidenceScore * 100)}%
                   </p>
                   <button
                     onClick={openPaperTrade}
@@ -248,7 +308,7 @@ function MarketDetail({ symbol }: { symbol: string }) {
                     ) : (
                       <CheckCircle2 className="w-4 h-4" />
                     )}
-                    <span className="text-sm font-bold">Open Paper Position</span>
+                    <span className="text-sm font-bold">{isTurkish ? 'Paper Sinyali Onayla' : 'Open Paper Position'}</span>
                   </button>
                 </div>
               </div>
@@ -258,7 +318,7 @@ function MarketDetail({ symbol }: { symbol: string }) {
             <section className="rounded-2xl bg-card border border-border p-6">
               <div className="flex items-center gap-2 mb-5">
                 <Newspaper className="w-5 h-5 text-secondary" />
-                <h2 className="text-lg">Symbol-Specific News</h2>
+                <h2 className="text-lg">{isTurkish ? 'Sembole Özel Haberler' : 'Symbol-Specific News'}</h2>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {research.news.map((item) => (
@@ -266,9 +326,9 @@ function MarketDetail({ symbol }: { symbol: string }) {
                     <div className="flex items-start gap-3">
                       <ShieldAlert className="w-4 h-4 text-secondary mt-1 flex-shrink-0" />
                       <div>
-                        <h3 className="text-sm">{item.title}</h3>
+                        <h3 className="text-sm">{translateNewsTitle(item.title)}</h3>
                         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                          {item.description || 'No description available.'}
+                          {translateNewsDescription(item.description) || (isTurkish ? 'Haber açıklaması bulunmuyor.' : 'No description available.')}
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-2">
                           {item.source} · {item.publishedAt}

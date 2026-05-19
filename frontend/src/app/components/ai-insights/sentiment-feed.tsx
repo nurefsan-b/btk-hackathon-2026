@@ -1,5 +1,6 @@
 import { Newspaper, Sparkles, Clock } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 interface SentimentItem {
   id: string;
@@ -15,11 +16,23 @@ interface SentimentFeedProps {
 }
 
 export function SentimentFeed({ items }: SentimentFeedProps) {
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
   const getSentimentColor = (score: number) => {
-    if (score >= 80) return { color: '#00ff88', label: 'Positive', bg: 'bg-[#00ff88]/10', border: 'border-[#00ff88]/30' };
-    if (score >= 60) return { color: '#6366f1', label: 'Neutral-Positive', bg: 'bg-[#6366f1]/10', border: 'border-[#6366f1]/30' };
-    if (score >= 40) return { color: '#94a3b8', label: 'Neutral', bg: 'bg-muted/30', border: 'border-border' };
-    return { color: '#f59e0b', label: 'Negative', bg: 'bg-[#f59e0b]/10', border: 'border-[#f59e0b]/30' };
+    if (score >= 80) return { color: '#00ff88', label: isTurkish ? 'Pozitif' : 'Positive', bg: 'bg-[#00ff88]/10', border: 'border-[#00ff88]/30' };
+    if (score >= 60) return { color: '#6366f1', label: isTurkish ? 'Nötr-Pozitif' : 'Neutral-Positive', bg: 'bg-[#6366f1]/10', border: 'border-[#6366f1]/30' };
+    if (score >= 40) return { color: '#94a3b8', label: isTurkish ? 'Nötr' : 'Neutral', bg: 'bg-muted/30', border: 'border-border' };
+    return { color: '#f59e0b', label: isTurkish ? 'Negatif' : 'Negative', bg: 'bg-[#f59e0b]/10', border: 'border-[#f59e0b]/30' };
+  };
+
+  // Helper to translate relative times
+  const translateTime = (timeStr: string) => {
+    if (!isTurkish) return timeStr;
+    return timeStr
+      .replace(/mins? ago/i, 'dk önce')
+      .replace(/hours? ago/i, 'saat önce')
+      .replace(/days? ago/i, 'gün önce');
   };
 
   return (
@@ -34,8 +47,10 @@ export function SentimentFeed({ items }: SentimentFeedProps) {
           <Newspaper className="w-5 h-5 text-[#00ff88]" />
         </div>
         <div>
-          <h2 className="text-lg">Real-time Sentiment Feed</h2>
-          <p className="text-xs text-muted-foreground">AI-analyzed news and market intelligence</p>
+          <h2 className="text-lg">{isTurkish ? 'Canlı Haber & Piyasa Akışı' : 'Real-time Sentiment Feed'}</h2>
+          <p className="text-xs text-muted-foreground">
+            {isTurkish ? 'Yapay zeka analizli haberler ve piyasa istihbaratı' : 'AI-analyzed news and market intelligence'}
+          </p>
         </div>
       </div>
 
@@ -61,7 +76,7 @@ export function SentimentFeed({ items }: SentimentFeedProps) {
                       <span>•</span>
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        <span>{item.timestamp}</span>
+                        <span>{translateTime(item.timestamp)}</span>
                       </div>
                     </div>
                   </div>
@@ -76,7 +91,7 @@ export function SentimentFeed({ items }: SentimentFeedProps) {
                   <div className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">AI Conclusion:</p>
+                      <p className="text-xs text-muted-foreground mb-1">{isTurkish ? 'AI Çıkarımı:' : 'AI Conclusion:'}</p>
                       <p className="text-sm leading-relaxed">{item.aiConclusion}</p>
                     </div>
                   </div>
@@ -89,7 +104,9 @@ export function SentimentFeed({ items }: SentimentFeedProps) {
 
       <div className="mt-4 bg-gradient-to-r from-muted/30 to-muted/20 rounded-lg p-3 border border-border/50">
         <p className="text-xs text-muted-foreground">
-          Feed updates every 5 minutes. AI processes 1,000+ sources continuously.
+          {isTurkish 
+            ? 'Akış her 5 dakikada bir güncellenir. AI sürekli 1000\'den fazla kaynağı analiz eder.'
+            : 'Feed updates every 5 minutes. AI processes 1,000+ sources continuously.'}
         </p>
       </div>
     </motion.div>

@@ -1,6 +1,7 @@
 import { Brain, AlertTriangle, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 import * as Switch from '@radix-ui/react-switch';
+import { useTranslation } from 'react-i18next';
 
 interface AIAutonomyCardProps {
   fullAutonomous: boolean;
@@ -15,11 +16,28 @@ export function AIAutonomyCard({
   riskTolerance,
   setRiskTolerance,
 }: AIAutonomyCardProps) {
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
   const getRiskLabel = (value: number) => {
-    if (value <= 25) return 'Conservative (Bonds & Stable Assets)';
-    if (value <= 50) return 'Moderate (Balanced Portfolio)';
-    if (value <= 75) return 'Growth (Tech & Emerging Markets)';
-    return 'Aggressive (Crypto & High-Risk Tech)';
+    if (value <= 25) {
+      return isTurkish 
+        ? 'Muhafazakar (Tahvil & Sabit Getirili Varlıklar)' 
+        : 'Conservative (Bonds & Stable Assets)';
+    }
+    if (value <= 50) {
+      return isTurkish 
+        ? 'Dengeli (Dengeli Portföy Dağılımı)' 
+        : 'Moderate (Balanced Portfolio)';
+    }
+    if (value <= 75) {
+      return isTurkish 
+        ? 'Büyüme Odaklı (Teknoloji & Gelişmekte Olan Piyasalar)' 
+        : 'Growth (Tech & Emerging Markets)';
+    }
+    return isTurkish 
+      ? 'Agresif (Kripto & Yüksek Riskli Teknoloji)' 
+      : 'Aggressive (Crypto & High-Risk Tech)';
   };
 
   const getRiskColor = (value: number) => {
@@ -47,20 +65,25 @@ export function AIAutonomyCard({
             <Brain className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-xl">AI Agent Authority</h2>
-            <p className="text-xs text-muted-foreground">Configure autonomous decision-making</p>
+            <h2 className="text-xl">{isTurkish ? 'AI Acentesi Yetkisi' : 'AI Agent Authority'}</h2>
+            <p className="text-xs text-muted-foreground">
+              {isTurkish ? 'Otonom karar verme yetkilerini yapılandırın' : 'Configure autonomous decision-making'}
+            </p>
           </div>
         </div>
 
         <div className="space-y-6">
           <div className="bg-muted/20 rounded-xl p-5 border border-border/50">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex-1">
+              <div className="flex-1 text-left">
                 <label htmlFor="autonomous-mode" className="text-sm mb-1 block">
-                  Full Autonomous Mode
+                  {isTurkish ? 'Tam Otonom Mod' : 'Full Autonomous Mode'}
                 </label>
                 <p className="text-xs text-muted-foreground">
-                  AI will automatically invest your spare change without confirmation
+                  {isTurkish 
+                    ? 'Yapay zeka, birikimlerinizi onayınız olmadan otomatik olarak yatırıma yönlendirir'
+                    : 'AI will automatically invest your spare change without confirmation'
+                  }
                 </p>
               </div>
               <Switch.Root
@@ -77,14 +100,19 @@ export function AIAutonomyCard({
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                className="bg-[#f59e0b]/10 border border-[#f59e0b]/30 rounded-lg p-3"
+                className="bg-[#f59e0b]/10 border border-[#f59e0b]/30 rounded-lg p-3 text-left"
               >
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-[#f59e0b] flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs text-[#f59e0b] mb-1">Warning: Full Autonomy Enabled</p>
+                    <p className="text-xs text-[#f59e0b] mb-1">
+                      {isTurkish ? 'Uyarı: Tam Otonomi Etkinleştirildi' : 'Warning: Full Autonomy Enabled'}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      The AI will execute investments immediately based on market sentiment analysis. You can review all transactions in your portfolio.
+                      {isTurkish 
+                        ? 'Yapay zeka, piyasa duyarlılık analizine dayalı olarak yatırımları hemen gerçekleştirecektir. Tüm işlemleri portföyünüzden takip edebilirsiniz.'
+                        : 'The AI will execute investments immediately based on market sentiment analysis. You can review all transactions in your portfolio.'
+                      }
                     </p>
                   </div>
                 </div>
@@ -92,9 +120,9 @@ export function AIAutonomyCard({
             )}
           </div>
 
-          <div className="bg-muted/20 rounded-xl p-5 border border-border/50">
+          <div className="bg-muted/20 rounded-xl p-5 border border-border/50 text-left">
             <label htmlFor="risk-tolerance" className="text-sm mb-4 block">
-              Risk Tolerance Level
+              {isTurkish ? 'Risk Tolerans Seviyesi' : 'Risk Tolerance Level'}
             </label>
             <div className="space-y-4">
               <div className="relative">
@@ -121,10 +149,10 @@ export function AIAutonomyCard({
               </div>
 
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Conservative</span>
-                <span>Moderate</span>
-                <span>Growth</span>
-                <span>Aggressive</span>
+                <span>{isTurkish ? 'Muhafazakar' : 'Conservative'}</span>
+                <span>{isTurkish ? 'Dengeli' : 'Moderate'}</span>
+                <span>{isTurkish ? 'Büyüme' : 'Growth'}</span>
+                <span>{isTurkish ? 'Agresif' : 'Aggressive'}</span>
               </div>
 
               <div
@@ -144,9 +172,12 @@ export function AIAutonomyCard({
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-muted/30 to-muted/20 rounded-lg p-4 border border-border/50">
+          <div className="bg-gradient-to-r from-muted/30 to-muted/20 rounded-lg p-4 border border-border/50 text-left">
             <p className="text-xs text-muted-foreground">
-              AI respects your risk preferences when analyzing investment opportunities. Higher risk tolerance allows the AI to explore growth-oriented assets.
+              {isTurkish 
+                ? 'Yapay zeka, yatırım fırsatlarını analiz ederken risk tercihlerinize uyar. Daha yüksek risk toleransı, AI\'ın büyüme odaklı varlıkları keşfetmesini sağlar.'
+                : 'AI respects your risk preferences when analyzing investment opportunities. Higher risk tolerance allows the AI to explore growth-oriented assets.'
+              }
             </p>
           </div>
         </div>

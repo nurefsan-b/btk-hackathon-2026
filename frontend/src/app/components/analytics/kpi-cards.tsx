@@ -1,5 +1,6 @@
 import { Target, TrendingUp, Wallet } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 interface KPICardsProps {
   data: {
@@ -13,23 +14,26 @@ interface KPICardsProps {
 }
 
 export function KPICards({ data }: KPICardsProps) {
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
   const cards = [
     {
-      title: 'Prediction Accuracy',
+      title: isTurkish ? 'Tahmin Doğruluğu' : 'Prediction Accuracy',
       value: `${data.predictionAccuracy}%`,
       trend: data.accuracyTrend,
       icon: Target,
       color: '#00ff88',
     },
     {
-      title: 'Total Roundups',
+      title: isTurkish ? 'Toplam Birikim' : 'Total Roundups',
       value: `₺${data.totalRoundups.toFixed(2)}`,
       trend: data.roundupsTrend,
       icon: Wallet,
       color: '#8b5cf6',
     },
     {
-      title: 'Next Month Forecast',
+      title: isTurkish ? 'Gelecek Ay Tahmini' : 'Next Month Forecast',
       value: `₺${data.nextMonthForecast.toFixed(2)}`,
       trend: data.forecastChange,
       icon: TrendingUp,
@@ -62,7 +66,9 @@ export function KPICards({ data }: KPICardsProps) {
               <span className="text-sm" style={{ color: card.color }}>
                 {card.trend}
               </span>
-              <span className="text-sm text-muted-foreground">vs last month</span>
+              <span className="text-sm text-muted-foreground">
+                {isTurkish ? 'geçen aya göre' : 'vs last month'}
+              </span>
             </div>
           </motion.div>
         );

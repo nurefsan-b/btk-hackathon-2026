@@ -1,5 +1,6 @@
 import { Brain, TrendingUp, CheckCircle2, Sparkles, Loader2, Search, Zap, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 import { type AIAdvisorResponse } from '../lib/api';
 
 interface Discovery {
@@ -17,8 +18,85 @@ interface AIAgentAdvisorProps {
 }
 
 export function AIAgentAdvisor({ amount, onApprove, isLoading = false, advisor, isOnline }: AIAgentAdvisorProps) {
+    const { t, i18n } = useTranslation();
+    const isTurkish = i18n.language.startsWith('tr');
+
     const canInvest = amount >= 100;
-    const discoveries: Discovery[] = advisor?.discoveries ?? [
+
+    // Discovery translations helper
+    const translateDiscovery = (text: string) => {
+        if (!isTurkish) return text;
+        let result = text;
+        result = result.replace(/Scanning supported assets:\s*(.*)\./i, 'Desteklenen varlıklar taranıyor: $1.');
+        result = result.replace(/Market sentiment for\s*(.*?):\s*(\d+\/\d+)\s*\((.*?)\)\./i, (match, asset, score, label) => {
+            const labels: Record<string, string> = {
+                'Constructive': 'Yapıcı',
+                'Bullish': 'Yükseliş',
+                'Bearish': 'Düşüş',
+                'Neutral': 'Nötr',
+                'Defensive': 'Savunmacı',
+                'Cautious': 'Temkinli',
+            };
+            const trLabel = labels[label] || label;
+            return `${asset} için piyasa sinyali: ${score} (${trLabel}).`;
+        });
+        result = result.replace(/Savings pool is\s*(.*?);\s*execution threshold is\s*(.*?)\./i, 'Birikim havuzu: $1; işlem eşiği: $2.');
+        result = result.replace(/Latest paper position:\s*(buy|sell|hold)\s*(.*?)\./i, (match, action, asset) => {
+            const trAction = action.toLowerCase() === 'buy' ? 'Al' : action.toLowerCase() === 'sell' ? 'Sat' : 'Bekle';
+            return `Son paper işlem pozisyonu: ${asset} ${trAction}.`;
+        });
+        return result;
+    };
+
+    // Recommendation translations helper
+    const translateRecommendation = (text: string) => {
+        if (!isTurkish) return text;
+        let result = text;
+        result = result.replace(/Accumulated (.*?)\. Waiting for the savings pool to reach (.*?) before considering (.*?)\./i, 
+            '$1 biriktirildi. $3 işlemi değerlendirilmeden önce birikim havuzunun $2 tutarına ulaşması bekleniyor.');
+        result = result.replace(/Accumulated (.*?)\. Market sentiment is (.*?);\s*the advisor is holding instead of opening a new (.*?) paper position\./i,
+            (match, acc, sentiment, asset) => {
+                const trSent = sentiment.toLowerCase() === 'bullish' ? 'Yükseliş' : 
+                               sentiment.toLowerCase() === 'bearish' ? 'Düşüş' : 
+                               sentiment.toLowerCase() === 'constructive' ? 'Yapıcı' : 'Nötr';
+                return `${acc} biriktirildi. Piyasa sinyali: ${trSent}; danışman yeni bir ${asset} paper pozisyonu açmak yerine beklemeyi tercih ediyor.`;
+            });
+        result = result.replace(/Accumulated (.*?)\. Market sentiment is (.*?);\s*the advisor is ready to open a (.*?) paper position\./i,
+            (match, acc, sentiment, asset) => {
+                const trSent = sentiment.toLowerCase() === 'bullish' ? 'Yükseliş' : 
+                               sentiment.toLowerCase() === 'bearish' ? 'Düşüş' : 
+                               sentiment.toLowerCase() === 'constructive' ? 'Yapıcı' : 'Nötr';
+                return `${acc} biriktirildi. Piyasa sinyali: ${trSent}; danışman ${asset} paper pozisyonu açmaya hazır.`;
+            });
+        return result;
+    };
+
+    // Risk level translations helper
+    const translateRisk = (riskText: string) => {
+        if (!isTurkish) return riskText;
+        const risks: Record<string, string> = {
+            'Low': 'Düşük',
+            'Medium': 'Orta',
+            'High': 'Yüksek',
+        };
+        return risks[riskText] || riskText;
+    };
+
+    // Sentiment label translations helper
+    const translateSentimentLabel = (sentimentText: string) => {
+        if (!isTurkish) return sentimentText;
+        const sentiments: Record<string, string> = {
+            'Bullish': 'Yükseliş',
+            'Constructive': 'Yapıcı',
+            'Neutral': 'Nötr',
+            'Defensive': 'Savunmacı',
+            'Cautious': 'Temkinli',
+            'Pending': 'Beklemede'
+        };
+        return sentiments[sentimentText] || sentimentText;
+    };
+
+    const rawDiscoveries = advisor?.discoveries ?? [
         {
             id: 'offline',
             text: isOnline === false
@@ -27,13 +105,20 @@ export function AIAgentAdvisor({ amount, onApprove, isLoading = false, advisor, 
             type: 'analysis',
         },
     ];
+
+    const discoveries: Discovery[] = rawDiscoveries.map(d => ({
+        ...d,
+        text: translateDiscovery(d.text)
+    }));
+
     const confidence = advisor ? `${Math.round(advisor.confidence_score * 100)}%` : '--';
-    const risk = advisor?.risk_level ?? '--';
+    const risk = translateRisk(advisor?.risk_level ?? '--');
     const expectedReturn = advisor?.expected_return_label ?? '--';
-    const recommendation = advisor?.recommendation
-        ?? `Accumulated ₺${amount.toFixed(2)}. Waiting for backend advisor data.`;
+    const recommendation = translateRecommendation(
+        advisor?.recommendation ?? `Accumulated ₺${amount.toFixed(2)}. Waiting for backend advisor data.`
+    );
     const selectedAsset = advisor?.asset ?? 'BIST100';
-    const marketSentiment = advisor?.market_sentiment ?? 'Pending';
+    const marketSentiment = translateSentimentLabel(advisor?.market_sentiment ?? 'Pending');
     const canApprove = canInvest && advisor?.action === 'buy';
 
     return (
@@ -55,7 +140,7 @@ export function AIAgentAdvisor({ amount, onApprove, isLoading = false, advisor, 
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h3 className="text-lg font-medium">AI Agent Advisor</h3>
+                                <h3 className="text-lg font-medium">{t('dashboard.ai_active')}</h3>
                                 <motion.div
                                     animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
                                     transition={{ duration: 2, repeat: Infinity }}
@@ -64,13 +149,15 @@ export function AIAgentAdvisor({ amount, onApprove, isLoading = false, advisor, 
                                 </motion.div>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                Live autonomous analysis
+                                {isTurkish ? 'Canlı otonom karar analizi' : 'Live autonomous analysis'}
                             </p>
                         </div>
                     </div>
                     <div className="px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 flex items-center gap-2">
                         <Sparkles className="w-3 h-3 text-secondary" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">Active</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">
+                            {isTurkish ? 'AKTİF' : 'ACTIVE'}
+                        </span>
                     </div>
                 </div>
 
@@ -79,7 +166,7 @@ export function AIAgentAdvisor({ amount, onApprove, isLoading = false, advisor, 
                     <div className="space-y-3">
                         <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
                             <Search className="w-3 h-3" />
-                            <span>Recent Discoveries</span>
+                            <span>{isTurkish ? 'Son Tespitler' : 'Recent Discoveries'}</span>
                         </div>
                         <div className="space-y-2 min-h-[160px]">
                             <AnimatePresence mode="popLayout">
@@ -107,7 +194,7 @@ export function AIAgentAdvisor({ amount, onApprove, isLoading = false, advisor, 
                         <div>
                             <div className="flex items-center gap-2 mb-4">
                                 <Zap className="w-4 h-4 text-[#00ff88]" />
-                                <span className="text-sm font-medium">Investment Recommendation</span>
+                                <span className="text-sm font-medium">{t('dashboard.ai_advisor_suggests')}</span>
                             </div>
 
                             {canInvest ? (
@@ -117,15 +204,15 @@ export function AIAgentAdvisor({ amount, onApprove, isLoading = false, advisor, 
                                     </p>
                                     <div className="grid grid-cols-3 gap-2">
                                         <div className="bg-card/50 rounded-lg p-2 border border-border/30 text-center">
-                                            <p className="text-[10px] text-muted-foreground">Confidence</p>
+                                            <p className="text-[10px] text-muted-foreground">{t('dashboard.confidence_score')}</p>
                                             <p className="text-xs font-bold text-[#00ff88]">{confidence}</p>
                                         </div>
                                         <div className="bg-card/50 rounded-lg p-2 border border-border/30 text-center">
-                                            <p className="text-[10px] text-muted-foreground">Risk</p>
+                                            <p className="text-[10px] text-muted-foreground">{t('dashboard.risk_level')}</p>
                                             <p className="text-xs font-bold text-accent">{risk}</p>
                                         </div>
                                         <div className="bg-card/50 rounded-lg p-2 border border-border/30 text-center">
-                                            <p className="text-[10px] text-muted-foreground">Return</p>
+                                            <p className="text-[10px] text-muted-foreground">{isTurkish ? 'Getiri' : 'Return'}</p>
                                             <p className="text-xs font-bold">{expectedReturn}</p>
                                         </div>
                                     </div>
@@ -140,8 +227,17 @@ export function AIAgentAdvisor({ amount, onApprove, isLoading = false, advisor, 
                                         />
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        Waiting for savings pool to reach <span className="text-foreground">₺100.00</span> before execution. 
-                                        Currently at <span className="text-secondary font-bold">₺{amount.toFixed(2)}</span>.
+                                        {isTurkish ? (
+                                            <>
+                                                Paper işlem açılması için birikim havuzunun <span className="text-foreground">₺100.00</span> tutarına ulaşması bekleniyor. 
+                                                Şu anki tutar: <span className="text-secondary font-bold">₺{amount.toFixed(2)}</span>.
+                                            </>
+                                        ) : (
+                                            <>
+                                                Waiting for savings pool to reach <span className="text-foreground">₺100.00</span> before execution. 
+                                                Currently at <span className="text-secondary font-bold">₺{amount.toFixed(2)}</span>.
+                                            </>
+                                        )}
                                     </p>
                                 </div>
                             )}
@@ -156,13 +252,15 @@ export function AIAgentAdvisor({ amount, onApprove, isLoading = false, advisor, 
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span className="text-sm font-bold">Processing...</span>
+                                        <span className="text-sm font-bold">{isTurkish ? 'İşleniyor...' : 'Processing...'}</span>
                                     </>
                                 ) : (
                                     <>
                                         <CheckCircle2 className="w-4 h-4" />
                                         <span className="text-sm font-bold">
-                                            {advisor?.action === 'hold' ? 'Advisor Holding' : 'Approve Paper Trade'}
+                                            {advisor?.action === 'hold' 
+                                                ? (isTurkish ? 'Danışman Beklemede' : 'Advisor Holding') 
+                                                : (isTurkish ? 'Paper İşlemi Onayla' : 'Approve Paper Trade')}
                                         </span>
                                     </>
                                 )}
@@ -175,11 +273,11 @@ export function AIAgentAdvisor({ amount, onApprove, isLoading = false, advisor, 
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1.5">
                             <BarChart3 className="w-3 h-3" />
-                            <span>Sentiment: {marketSentiment}</span>
+                            <span>{isTurkish ? 'Piyasa Sinyali' : 'Sentiment'}: {marketSentiment}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                             <TrendingUp className="w-3 h-3" />
-                            <span>Asset: {selectedAsset}</span>
+                            <span>{isTurkish ? 'Varlık' : 'Asset'}: {selectedAsset}</span>
                         </div>
                     </div>
                     <span>ID: AGENT-RX-72</span>

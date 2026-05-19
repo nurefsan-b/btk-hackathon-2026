@@ -1,6 +1,7 @@
 import { Bell, TrendingUp, Calendar, AlertTriangle } from 'lucide-react';
 import { motion } from 'motion/react';
 import * as Switch from '@radix-ui/react-switch';
+import { useTranslation } from 'react-i18next';
 
 interface NotificationsCardProps {
   notifications: {
@@ -12,26 +13,35 @@ interface NotificationsCardProps {
 }
 
 export function NotificationsCard({ notifications, setNotifications }: NotificationsCardProps) {
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
   const notificationSettings = [
     {
       id: 'investmentAlerts',
       icon: TrendingUp,
-      title: 'Investment Alerts',
-      description: 'Get notified when AI makes investment decisions',
+      title: isTurkish ? 'Yatırım Bildirimleri' : 'Investment Alerts',
+      description: isTurkish 
+        ? 'Yapay zeka otonom yatırım kararı aldığında bildirim alın' 
+        : 'Get notified when AI makes investment decisions',
       color: '#00ff88',
     },
     {
       id: 'weeklySummaries',
       icon: Calendar,
-      title: 'Weekly Summaries',
-      description: 'Receive weekly portfolio performance reports',
+      title: isTurkish ? 'Haftalık Özet Raporlar' : 'Weekly Summaries',
+      description: isTurkish 
+        ? 'Haftalık portföy gelişim ve performans raporları alın' 
+        : 'Receive weekly portfolio performance reports',
       color: '#8b5cf6',
     },
     {
       id: 'marketWarnings',
       icon: AlertTriangle,
-      title: 'AI Market Warnings',
-      description: 'Critical alerts about market volatility and risks',
+      title: isTurkish ? 'AI Piyasa Uyarıları' : 'AI Market Warnings',
+      description: isTurkish 
+        ? 'Piyasa oynaklığı ve kritik finansal riskler hakkında uyarılar' 
+        : 'Critical alerts about market volatility and risks',
       color: '#f59e0b',
     },
   ];
@@ -54,9 +64,9 @@ export function NotificationsCard({ notifications, setNotifications }: Notificat
         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#6366f1]/20 to-[#8b5cf6]/20 flex items-center justify-center">
           <Bell className="w-5 h-5 text-[#6366f1]" />
         </div>
-        <div>
-          <h2 className="text-lg">Notifications</h2>
-          <p className="text-xs text-muted-foreground">Manage your alert preferences</p>
+        <div className="text-left">
+          <h2 className="text-lg">{isTurkish ? 'Bildirimler' : 'Notifications'}</h2>
+          <p className="text-xs text-muted-foreground">{isTurkish ? 'Bildirim tercihlerinizi düzenleyin' : 'Manage your alert preferences'}</p>
         </div>
       </div>
 
@@ -74,9 +84,9 @@ export function NotificationsCard({ notifications, setNotifications }: Notificat
               className="bg-muted/20 rounded-xl p-4 border border-border/50 hover:bg-muted/30 transition-colors"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1">
+                <div className="flex items-center gap-3 flex-1 text-left">
                   <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                     style={{
                       background: `linear-gradient(135deg, ${setting.color}20, ${setting.color}10)`,
                     }}
@@ -91,7 +101,7 @@ export function NotificationsCard({ notifications, setNotifications }: Notificat
                 <Switch.Root
                   checked={isEnabled}
                   onCheckedChange={() => handleToggle(setting.id)}
-                  className="w-12 h-6 bg-muted rounded-full relative data-[state=checked]:bg-[#00ff88] transition-colors"
+                  className="w-12 h-6 bg-muted rounded-full relative data-[state=checked]:bg-[#00ff88] transition-colors flex-shrink-0"
                 >
                   <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform translate-x-0.5 data-[state=checked]:translate-x-[26px] shadow-lg" />
                 </Switch.Root>
@@ -101,9 +111,11 @@ export function NotificationsCard({ notifications, setNotifications }: Notificat
         })}
       </div>
 
-      <div className="mt-4 bg-gradient-to-r from-muted/30 to-muted/20 rounded-lg p-4 border border-border/50">
+      <div className="mt-4 bg-gradient-to-r from-muted/30 to-muted/20 rounded-lg p-4 border border-border/50 text-left">
         <p className="text-xs text-muted-foreground">
-          Notifications are delivered via in-app alerts and email. You can customize delivery methods in advanced settings.
+          {isTurkish 
+            ? 'Bildirimler uygulama içi uyarılar ve e-posta ile gönderilir. Dağıtım yöntemlerini gelişmiş ayarlardan özelleştirebilirsiniz.'
+            : 'Notifications are delivered via in-app alerts and email. You can customize delivery methods in advanced settings.'}
         </p>
       </div>
     </motion.div>

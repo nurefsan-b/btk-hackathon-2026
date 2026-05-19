@@ -29,7 +29,7 @@ export function SavingsPoolCard({ totalSavings, totalInvested = 0 }: SavingsPool
                             <TrendingUp className="w-6 h-6 text-[#0a0e27]" />
                         </div>
                         <div>
-                            <p className="text-sm text-muted-foreground">Total Savings Pool</p>
+                            <p className="text-sm text-muted-foreground">Birikim Havuzu</p>
                             <div className="flex items-center gap-2 mt-1">
                                 <motion.div
                                     animate={{
@@ -43,7 +43,7 @@ export function SavingsPoolCard({ totalSavings, totalInvested = 0 }: SavingsPool
                                     }}
                                     className="w-2 h-2 rounded-full bg-[#00ff88]"
                                 ></motion.div>
-                                <span className="text-xs text-[#00ff88]">AI Monitoring Active</span>
+                                <span className="text-xs text-[#00ff88]">AI Danışman Aktif</span>
                             </div>
                         </div>
                     </div>
@@ -61,21 +61,21 @@ export function SavingsPoolCard({ totalSavings, totalInvested = 0 }: SavingsPool
                         ₺{totalSavings.toFixed(2)}
                     </motion.div>
                     <p className="text-sm text-muted-foreground">
-                        Accumulated from spare change roundups
+                        Bozuk para yuvarlama farklarından biriktirilen tutar
                     </p>
                 </div>
 
                 <div className="mt-6 grid grid-cols-3 gap-4">
                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-                        <p className="text-xs text-muted-foreground mb-1">Pending</p>
+                        <p className="text-xs text-muted-foreground mb-1">Beklemede</p>
                         <p className="text-lg text-[#00ff88]">₺{totalSavings.toFixed(2)}</p>
                     </div>
                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-                        <p className="text-xs text-muted-foreground mb-1">Invested</p>
+                        <p className="text-xs text-muted-foreground mb-1">Paper İşlemde</p>
                         <p className="text-lg text-foreground">₺{totalInvested.toFixed(2)}</p>
                     </div>
                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-                        <p className="text-xs text-muted-foreground mb-1">All Time</p>
+                        <p className="text-xs text-muted-foreground mb-1">Toplam</p>
                         <p className="text-lg text-foreground">₺{allTime.toFixed(2)}</p>
                     </div>
                 </div>

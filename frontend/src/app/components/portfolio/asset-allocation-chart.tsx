@@ -1,6 +1,7 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { motion } from 'motion/react';
 import { PieChart as PieChartIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface AssetAllocation {
   name: string;
@@ -14,11 +15,21 @@ interface AssetAllocationChartProps {
 }
 
 export function AssetAllocationChart({ allocation }: AssetAllocationChartProps) {
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
+  // Helper to translate asset names
+  const translateAssetName = (name: string) => {
+    if (!isTurkish) return name;
+    if (name === 'AI allocation pending') return 'AI dağıtımı bekleniyor';
+    return name;
+  };
+
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-xl backdrop-blur-sm">
-          <p className="text-sm mb-1">{payload[0].name}</p>
+          <p className="text-sm mb-1">{translateAssetName(payload[0].name)}</p>
           <p className="text-xs text-muted-foreground">
             ₺{payload[0].payload.amount.toFixed(2)} ({payload[0].value}%)
           </p>
@@ -40,14 +51,16 @@ export function AssetAllocationChart({ allocation }: AssetAllocationChartProps) 
           <PieChartIcon className="w-5 h-5 text-accent" />
         </div>
         <div>
-          <h2 className="text-lg">Asset Allocation</h2>
-          <p className="text-xs text-muted-foreground">Portfolio distribution</p>
+          <h2 className="text-lg">{t('portfolio.allocation')}</h2>
+          <p className="text-xs text-muted-foreground">
+            {isTurkish ? 'Portföy dağılımı' : 'Portfolio distribution'}
+          </p>
         </div>
       </div>
 
       {allocation.length === 0 ? (
         <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">
-          No allocation data yet.
+          {isTurkish ? 'Henüz varlık dağılım verisi bulunmuyor.' : 'No allocation data yet.'}
         </div>
       ) : (
         <div className="h-64">
@@ -86,7 +99,7 @@ export function AssetAllocationChart({ allocation }: AssetAllocationChartProps) 
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: item.color }}
               ></div>
-              <span className="text-sm">{item.name}</span>
+              <span className="text-sm">{translateAssetName(item.name)}</span>
             </div>
             <div className="text-right">
               <p className="text-sm">{item.value}%</p>

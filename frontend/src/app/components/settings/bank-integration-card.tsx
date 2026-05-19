@@ -1,21 +1,25 @@
 import { Building2, CheckCircle2, Link2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 export function BankIntegrationCard() {
+  const { t, i18n } = useTranslation();
+  const isTurkish = i18n.language.startsWith('tr');
+
   const integrations = [
     {
       id: '1',
-      name: 'Mock Bank API',
+      name: isTurkish ? 'Simüle Banka API\'si' : 'Mock Bank API',
       status: 'connected',
-      type: 'Webhook Integration',
-      lastSync: '2 minutes ago',
+      type: isTurkish ? 'Webhook Entegrasyonu' : 'Webhook Integration',
+      lastSync: isTurkish ? '2 dakika önce' : '2 minutes ago',
     },
     {
       id: '2',
-      name: 'Payment Gateway',
+      name: isTurkish ? 'Ödeme Geçidi' : 'Payment Gateway',
       status: 'connected',
-      type: 'Direct Integration',
-      lastSync: '5 minutes ago',
+      type: isTurkish ? 'Doğrudan Entegrasyon' : 'Direct Integration',
+      lastSync: isTurkish ? '5 dakika önce' : '5 minutes ago',
     },
   ];
 
@@ -30,9 +34,9 @@ export function BankIntegrationCard() {
         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#00ff88]/20 to-[#14b8a6]/20 flex items-center justify-center">
           <Building2 className="w-5 h-5 text-[#00ff88]" />
         </div>
-        <div>
-          <h2 className="text-lg">Bank Integrations & Webhooks</h2>
-          <p className="text-xs text-muted-foreground">Connected financial services</p>
+        <div className="text-left">
+          <h2 className="text-lg">{isTurkish ? 'Banka Entegrasyonları' : 'Bank Integrations & Webhooks'}</h2>
+          <p className="text-xs text-muted-foreground">{isTurkish ? 'Bağlı finansal hizmetler' : 'Connected financial services'}</p>
         </div>
       </div>
 
@@ -46,7 +50,7 @@ export function BankIntegrationCard() {
             className="bg-muted/20 rounded-xl p-4 border border-border/50"
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 text-left">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-secondary/20 to-accent/20 flex items-center justify-center">
                   <Link2 className="w-5 h-5 text-secondary" />
                 </div>
@@ -58,22 +62,27 @@ export function BankIntegrationCard() {
               <div className="text-right">
                 <div className="flex items-center gap-2 px-3 py-1 bg-[#00ff88]/10 rounded-lg border border-[#00ff88]/30 mb-1">
                   <div className="w-2 h-2 rounded-full bg-[#00ff88] animate-pulse"></div>
-                  <span className="text-xs text-[#00ff88]">Connected</span>
+                  <span className="text-xs text-[#00ff88]">{isTurkish ? 'Bağlı' : 'Connected'}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Last sync: {integration.lastSync}</p>
+                <p className="text-xs text-muted-foreground">
+                  {isTurkish ? 'Son senkronizasyon:' : 'Last sync:'} {integration.lastSync}
+                </p>
               </div>
             </div>
           </motion.div>
         ))}
       </div>
 
-      <div className="mt-4 bg-gradient-to-r from-[#00ff88]/10 to-[#14b8a6]/10 rounded-lg p-4 border border-[#00ff88]/30">
+      <div className="mt-4 bg-gradient-to-r from-[#00ff88]/10 to-[#14b8a6]/10 rounded-lg p-4 border border-[#00ff88]/30 text-left">
         <div className="flex items-start gap-2">
           <CheckCircle2 className="w-4 h-4 text-[#00ff88] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Secure Connection</p>
+            <p className="text-xs text-muted-foreground mb-1 font-medium">{isTurkish ? 'Güvenli Bağlantı' : 'Secure Connection'}</p>
             <p className="text-xs text-muted-foreground">
-              All connections use end-to-end encryption and OAuth 2.0 authentication. No credentials are stored.
+              {isTurkish 
+                ? 'Tüm bağlantılar uçtan uca şifreleme ve OAuth 2.0 kimlik doğrulaması kullanır. Şifreleriniz asla sunucumuzda saklanmaz.'
+                : 'All connections use end-to-end encryption and OAuth 2.0 authentication. No credentials are stored.'
+              }
             </p>
           </div>
         </div>

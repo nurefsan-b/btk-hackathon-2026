@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PortfolioOverview } from '../components/portfolio/portfolio-overview';
 import { AIPerformanceCard } from '../components/portfolio/ai-performance-card';
 import { AIAgentAdvisor } from '../components/ai-agent-advisor';
@@ -19,6 +20,9 @@ import {
 
 export function Portfolio() {
     const user = useRequireAuth();
+    const { t, i18n } = useTranslation();
+    const isTurkish = i18n.language.startsWith('tr');
+    
     const [trades, setTrades] = useState<TradeResponse[]>([]);
     const [savings, setSavings] = useState<SavingsSummary | null>(null);
     const [advisor, setAdvisor] = useState<AIAdvisorResponse | null>(null);
@@ -134,7 +138,9 @@ export function Portfolio() {
             <main className="flex-1 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-10 h-10 border-4 border-[#00ff88] border-t-transparent rounded-full animate-spin" />
-                    <p className="text-muted-foreground animate-pulse">Analyzing portfolio...</p>
+                    <p className="text-muted-foreground animate-pulse">
+                        {isTurkish ? 'Portföy analiz ediliyor...' : 'Analyzing portfolio...'}
+                    </p>
                 </div>
             </main>
         );
@@ -146,10 +152,10 @@ export function Portfolio() {
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h1 className="text-3xl tracking-tight bg-gradient-to-r from-[#00ff88] to-[#8b5cf6] bg-clip-text text-transparent">
-                            Portfolio
+                            {t('portfolio.title')}
                         </h1>
                         <p className="text-muted-foreground mt-1">
-                            AI-Managed Investment Overview
+                            {t('portfolio.subtitle')}
                         </p>
                     </div>
                 </div>
