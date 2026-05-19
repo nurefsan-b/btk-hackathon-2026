@@ -4,10 +4,12 @@ import asyncio
 import json
 
 import structlog
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sse_starlette.sse import EventSourceResponse
 
+from app.api.v1.auth import get_current_user
 from app.dependencies import DBSession
+from app.schemas.auth import UserResponse
 from app.schemas.trade import CreatePaperTradeRequest, TradeResponse, TriggerTradeRequest
 from app.services.trading_service import TradingService
 
@@ -32,9 +34,13 @@ _SSE_POLL_INTERVAL = 1.5
         "The agent will analyze news and execute a paper trade asynchronously."
     ),
 )
-async def trigger_trade(payload: TriggerTradeRequest, db: DBSession) -> dict:
+async def trigger_trade(
+    payload: TriggerTradeRequest,
+    db: DBSession,
+    current_user: UserResponse = Depends(get_current_user),
+) -> dict:
     svc = TradingService(db)
-    return await svc.trigger_trade(payload.user_id, payload.saving_id)
+    return await svc.trigger_trade(str(current_user.id), payload.saving_id)
 
 
 @router.get(
@@ -117,11 +123,15 @@ async def stream_task_status(task_id: str, request: Request) -> EventSourceRespo
     status_code=201,
     summary="Open a user-selected paper position",
 )
-async def create_paper_trade(payload: CreatePaperTradeRequest, db: DBSession) -> TradeResponse:
+async def create_paper_trade(
+    payload: CreatePaperTradeRequest,
+    db: DBSession,
+    current_user: UserResponse = Depends(get_current_user),
+) -> TradeResponse:
     svc = TradingService(db)
     try:
         trade = await svc.create_user_paper_trade(
-            user_id=payload.user_id,
+            user_id=str(current_user.id),
             asset=payload.asset,
             amount=payload.amount,
             confidence_score=payload.confidence_score,
@@ -133,15 +143,15 @@ async def create_paper_trade(payload: CreatePaperTradeRequest, db: DBSession) ->
 
 
 @router.get(
-    "/{user_id}",
+    "/",
     response_model=list[TradeResponse],
     summary="Get user's trade history",
 )
 async def list_trades(
-    user_id: str,
     db: DBSession,
     limit: int = 20,
+    current_user: UserResponse = Depends(get_current_user),
 ) -> list[TradeResponse]:
     svc = TradingService(db)
-    trades = await svc.get_trade_history(user_id, limit)
+    trades = await svc.get_trade_history(str(current_user.id), limit)
     return [TradeResponse.model_validate(t) for t in trades]

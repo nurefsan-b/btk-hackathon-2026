@@ -3,13 +3,15 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 
+from app.api.v1.auth import get_current_user
 from app.ai.news_fetcher import fetch_financial_news
 from app.db.models.trade import Trade
 from app.db.models.transaction import BankTransaction
 from app.dependencies import DBSession
+from app.schemas.auth import UserResponse
 from app.schemas.analytics import (
     AnalyticsKPI,
     AnalyticsResponse,
@@ -25,10 +27,13 @@ POSITIVE_TERMS = ("artış", "büyüme", "olumlu", "rekor", "yükseliş", "güç
 NEGATIVE_TERMS = ("düşüş", "gerile", "risk", "resesyon", "kayb", "negatif", "baskı")
 
 
-@router.get("/{user_id}", response_model=AnalyticsResponse)
-async def get_analytics(user_id: str, db: DBSession) -> AnalyticsResponse:
-    transactions = await _list_transactions(db, user_id)
-    trades = await _list_trades(db, user_id)
+@router.get("/", response_model=AnalyticsResponse)
+async def get_analytics(
+    db: DBSession,
+    current_user: UserResponse = Depends(get_current_user),
+) -> AnalyticsResponse:
+    transactions = await _list_transactions(db, str(current_user.id))
+    trades = await _list_trades(db, str(current_user.id))
     articles = await fetch_financial_news()
     sentiment = _average_sentiment(articles)
 

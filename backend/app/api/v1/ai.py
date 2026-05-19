@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.api.v1.auth import get_current_user
 from app.ai.news_fetcher import fetch_financial_news
 from app.db.models.trade import Trade
 from app.dependencies import DBSession
 from app.repositories.saving_entry_repo import SavingEntryRepository
+from app.schemas.auth import UserResponse
 from app.schemas.ai_insight import (
     AdvisorDiscovery,
     AIAdvisorResponse,
@@ -43,10 +45,13 @@ NEGATIVE_TERMS = (
 SUPPORTED_ASSETS = ("BIST100", "XAU", "USD", "EUR", "BTC")
 
 
-@router.get("/insights/{user_id}", response_model=AIInsightsResponse)
-async def get_ai_insights(user_id: str, db: DBSession) -> AIInsightsResponse:
+@router.get("/insights", response_model=AIInsightsResponse)
+async def get_ai_insights(
+    db: DBSession,
+    current_user: UserResponse = Depends(get_current_user),
+) -> AIInsightsResponse:
     articles = await fetch_financial_news()
-    trades = await TradingService(db).get_trade_history(user_id, limit=1)
+    trades = await TradingService(db).get_trade_history(str(current_user.id), limit=1)
     latest_trade = trades[0] if trades else None
 
     sentiment_feed = [
@@ -68,16 +73,19 @@ async def get_ai_insights(user_id: str, db: DBSession) -> AIInsightsResponse:
     )
 
 
-@router.get("/advisor/{user_id}", response_model=AIAdvisorResponse)
-async def get_ai_advisor(user_id: str, db: DBSession) -> AIAdvisorResponse:
+@router.get("/advisor", response_model=AIAdvisorResponse)
+async def get_ai_advisor(
+    db: DBSession,
+    current_user: UserResponse = Depends(get_current_user),
+) -> AIAdvisorResponse:
     articles = await fetch_financial_news()
     sentiment_feed = [
         _article_to_sentiment(index, article)
         for index, article in enumerate(articles[:5], start=1)
     ]
     average_sentiment = _average_sentiment(sentiment_feed)
-    latest_trade = (await TradingService(db).get_trade_history(user_id, limit=1) or [None])[0]
-    pending_balance = await SavingEntryRepository(db).get_pending_balance(user_id)
+    latest_trade = (await TradingService(db).get_trade_history(str(current_user.id), limit=1) or [None])[0]
+    pending_balance = await SavingEntryRepository(db).get_pending_balance(str(current_user.id))
 
     asset = _recommended_asset(sentiment_feed, latest_trade)
     action = _recommended_action(pending_balance, average_sentiment)

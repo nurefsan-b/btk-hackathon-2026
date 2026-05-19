@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -73,6 +73,13 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self) -> Settings:
+        if self.is_production:
+            if not self.app_secret_key or self.app_secret_key in ["change-me-in-production", "change-me-in-development"]:
+                raise ValueError("A secure APP_SECRET_KEY environment variable MUST be set in production mode.")
+        return self
 
 
 @lru_cache

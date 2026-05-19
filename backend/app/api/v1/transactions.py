@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.api.v1.auth import get_current_user
 from app.dependencies import DBSession
+from app.schemas.auth import UserResponse
 from app.schemas.transaction import TransactionCreate, TransactionResponse
 from app.services.transaction_service import TransactionService
 
@@ -29,15 +31,15 @@ async def create_transaction(
 
 
 @router.get(
-    "/{user_id}",
+    "/",
     response_model=list[TransactionResponse],
     summary="Get user's transaction history",
 )
 async def list_transactions(
-    user_id: str,
     db: DBSession,
     limit: int = 50,
+    current_user: UserResponse = Depends(get_current_user),
 ) -> list[TransactionResponse]:
     svc = TransactionService(db)
-    txs = await svc.get_user_transactions(user_id, limit)
+    txs = await svc.get_user_transactions(str(current_user.id), limit)
     return [TransactionResponse.model_validate(tx) for tx in txs]
