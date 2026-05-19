@@ -9,7 +9,7 @@
   },
   "dashboard": {
     "title": "MicroFon",
-    "subtitle": "Micro-Investment Agent",
+    "subtitle": "Decision Support & Paper Trading Platform",
     "ai_status_queued": "AI is analyzing...",
     "ai_status_done": "Task completed ✓",
     "ai_status_error": "Task failed",

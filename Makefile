@@ -27,6 +27,9 @@ makemigrations:
 	@read -p "Migration message: " msg; \
 	docker compose exec backend alembic revision --autogenerate -m "$$msg"
 
+seed:
+	docker compose exec backend python -m app.db.seed
+
 # ─── Development ───────────────────────────────────────────────
 shell:
 	docker compose exec backend bash

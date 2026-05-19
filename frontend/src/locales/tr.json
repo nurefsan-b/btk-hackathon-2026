@@ -9,7 +9,7 @@
   },
   "dashboard": {
     "title": "MicroFon",
-    "subtitle": "Mikro-Yatırım Ajanı",
+    "subtitle": "Karar Destek & Paper Trading Platformu",
     "ai_status_queued": "AI analiz yapıyor...",
     "ai_status_done": "İşlem tamamlandı ✓",
     "ai_status_error": "İşlem başarısız",
