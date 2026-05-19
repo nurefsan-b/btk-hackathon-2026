@@ -31,10 +31,17 @@ PLACEHOLDER_API_KEYS = {
 }
 
 
+def _fallback_to_mock(retry_state) -> list[dict]:
+    """Fallback when all retries are exhausted by tenacity."""
+    exc = retry_state.outcome.exception()
+    log.error("news_fetcher.all_retries_failed", error=str(exc), msg="Falling back to mock news")
+    return _mock_news()
+
+
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
-    reraise=True,
+    retry_error_callback=_fallback_to_mock,
 )
 async def fetch_financial_news(query: str = "Türkiye ekonomi borsa") -> list[dict]:  # type: ignore[return]
     """
@@ -79,13 +86,22 @@ async def fetch_financial_news(query: str = "Türkiye ekonomi borsa") -> list[di
                 filtered_count=len(filtered_articles),
             )
             return filtered_articles
-    except httpx.HTTPError as exc:
-        log.warning(
-            "news_fetcher.http_error",
-            error=str(exc),
-            msg="Using mock news data",
-        )
-        return _mock_news()
+    except httpx.HTTPStatusError as exc:
+        # Don't retry on fatal errors (e.g., bad API key)
+        if exc.response.status_code in {401, 403, 404, 422}:
+            log.warning(
+                "news_fetcher.fatal_http_error",
+                status_code=exc.response.status_code,
+                msg="Using mock news data immediately without retry",
+            )
+            return _mock_news()
+        # For 429 (Rate Limit) and 5xx (Server Error), raise to trigger retry
+        log.warning("news_fetcher.retrying_http_error", status_code=exc.response.status_code)
+        raise
+    except httpx.RequestError as exc:
+        # For connection timeouts and network errors, raise to trigger retry
+        log.warning("news_fetcher.retrying_network_error", error=str(exc))
+        raise
 
 
 def _has_real_news_api_key() -> bool:
