@@ -3,20 +3,22 @@ import { LayoutDashboard, LineChart, TrendingUp, Wallet, Settings, Sparkles, Men
 import { useLocation, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../lib/auth-context';
+import { useTranslation } from 'react-i18next';
 
 export function Sidebar() {
     const location = useLocation();
     const navigate = useNavigate();
     const [mobileOpen, setMobileOpen] = useState(false);
     const { user } = useAuth();
+    const { t, i18n } = useTranslation();
 
     const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-        { icon: Wallet, label: 'Portfolio', path: '/portfolio' },
-        { icon: LineChart, label: 'Markets', path: '/markets' },
-        { icon: TrendingUp, label: 'Analytics', path: '/analytics' },
-        { icon: Sparkles, label: 'AI Insights', path: '/ai-insights' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
+        { icon: LayoutDashboard, label: t('menu.dashboard'), path: '/dashboard' },
+        { icon: Wallet, label: t('menu.portfolio'), path: '/portfolio' },
+        { icon: LineChart, label: t('menu.markets'), path: '/markets' },
+        { icon: TrendingUp, label: t('menu.analytics'), path: '/analytics' },
+        { icon: Sparkles, label: t('menu.ai_insights'), path: '/ai-insights' },
+        { icon: Settings, label: t('menu.settings'), path: '/settings' },
     ];
 
     const handleNavigate = (path: string) => {
@@ -86,6 +88,14 @@ export function Sidebar() {
                         </div>
                     </div>
                 )}
+                
+                <div className="flex justify-between items-center px-2 pt-2 border-t border-sidebar-border mt-2">
+                    <span className="text-xs text-sidebar-foreground/70">{t('common.language')}</span>
+                    <div className="flex gap-1">
+                        <button onClick={() => i18n.changeLanguage('tr')} className={`text-[10px] px-2 py-1 rounded cursor-pointer ${i18n.language.startsWith('tr') ? 'bg-sidebar-accent text-white' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50'}`}>TR</button>
+                        <button onClick={() => i18n.changeLanguage('en')} className={`text-[10px] px-2 py-1 rounded cursor-pointer ${i18n.language.startsWith('en') ? 'bg-sidebar-accent text-white' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50'}`}>EN</button>
+                    </div>
+                </div>
             </div>
         </>
     );

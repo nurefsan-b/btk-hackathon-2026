@@ -1,0 +1,22 @@
+{
+  "menu": {
+    "dashboard": "Dashboard",
+    "portfolio": "Portfolio",
+    "markets": "Markets",
+    "ai_insights": "AI Insights",
+    "analytics": "Analytics",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "MicroFon",
+    "subtitle": "Micro-Investment Agent",
+    "ai_status_queued": "AI is analyzing...",
+    "ai_status_done": "Task completed ✓",
+    "ai_status_error": "Task failed",
+    "loading": "Loading transactions..."
+  },
+  "common": {
+    "language": "Language",
+    "logout": "Logout"
+  }
+}

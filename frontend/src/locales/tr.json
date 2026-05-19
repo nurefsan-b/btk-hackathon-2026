@@ -1,0 +1,22 @@
+{
+  "menu": {
+    "dashboard": "Ana Ekran",
+    "portfolio": "Portföyüm",
+    "markets": "Piyasalar",
+    "ai_insights": "AI Analizleri",
+    "analytics": "Gelişmiş Analitik",
+    "settings": "Ayarlar"
+  },
+  "dashboard": {
+    "title": "MicroFon",
+    "subtitle": "Mikro-Yatırım Ajanı",
+    "ai_status_queued": "AI analiz yapıyor...",
+    "ai_status_done": "İşlem tamamlandı ✓",
+    "ai_status_error": "İşlem başarısız",
+    "loading": "İşlemler yükleniyor..."
+  },
+  "common": {
+    "language": "Dil Seç",
+    "logout": "Çıkış Yap"
+  }
+}

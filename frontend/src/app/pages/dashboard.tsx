@@ -17,6 +17,7 @@ import {
     type TradeResponse,
     type TransactionResponse,
 } from '../lib/api';
+import { useTranslation } from 'react-i18next';
 
 interface DisplayTransaction {
     id: string;
@@ -71,6 +72,7 @@ function tradeToDisplay(trade: TradeResponse): DisplayTransaction {
 
 export function Dashboard() {
     const user = useRequireAuth();
+    const { t } = useTranslation();
     const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
     const [totalSavings, setTotalSavings] = useState(0);
     const [totalInvested, setTotalInvested] = useState(0);
@@ -196,29 +198,29 @@ export function Dashboard() {
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h1 className="text-3xl tracking-tight bg-gradient-to-r from-[#00ff88] to-[#8b5cf6] bg-clip-text text-transparent">
-                            MicroFon
+                            {t('dashboard.title')}
                         </h1>
                         <p className="text-muted-foreground mt-1">
-                            Micro-Investment Agent
+                            {t('dashboard.subtitle')}
                         </p>
                     </div>
                     {/* ── SSE trade status badge ───────────────── */}
                     {tradeStatus === 'queued' && (
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#8b5cf6]/15 border border-[#8b5cf6]/30 text-sm text-[#c4b5fd]">
                             <span className="w-2 h-2 rounded-full bg-[#8b5cf6] animate-pulse" />
-                            AI analiz yapıyor...
+                            {t('dashboard.ai_status_queued')}
                         </div>
                     )}
                     {tradeStatus === 'done' && (
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00ff88]/15 border border-[#00ff88]/30 text-sm text-[#00ff88]">
                             <span className="w-2 h-2 rounded-full bg-[#00ff88]" />
-                            İşlem tamamlandı ✓
+                            {t('dashboard.ai_status_done')}
                         </div>
                     )}
                     {tradeStatus === 'error' && (
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/15 border border-red-500/30 text-sm text-red-400">
                             <span className="w-2 h-2 rounded-full bg-red-500" />
-                            İşlem başarısız
+                            {t('dashboard.ai_status_error')}
                         </div>
                     )}
                 </div>
@@ -242,7 +244,7 @@ export function Dashboard() {
                     <div className="rounded-2xl bg-card border border-border p-12 flex items-center justify-center">
                         <div className="flex items-center gap-3">
                             <div className="w-5 h-5 border-2 border-[#00ff88] border-t-transparent rounded-full animate-spin" />
-                            <span className="text-muted-foreground">Loading transactions...</span>
+                            <span className="text-muted-foreground">{t('dashboard.loading')}</span>
                         </div>
                     </div>
                 ) : (
