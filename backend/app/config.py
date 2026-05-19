@@ -40,7 +40,7 @@ class Settings(BaseSettings):
 
     # ── AI / Gemini ────────────────────────────────────
     google_api_key: str = Field(..., description="Google Gemini API key")
-    gemini_model: str = "gemini-1.5-pro"
+    gemini_model: str = "gemini-1.5"
 
     # ── Auth / Google OAuth ────────────────────────────
     google_client_id: str = ""
