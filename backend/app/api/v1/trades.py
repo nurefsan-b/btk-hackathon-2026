@@ -142,6 +142,25 @@ async def create_paper_trade(
     return TradeResponse.model_validate(trade)
 
 
+@router.post(
+    "/{trade_id}/sell",
+    response_model=TradeResponse,
+    status_code=200,
+    summary="Sell an active position",
+)
+async def sell_trade(
+    trade_id: str,
+    db: DBSession,
+    current_user: UserResponse = Depends(get_current_user),
+) -> TradeResponse:
+    svc = TradingService(db)
+    try:
+        trade = await svc.sell_user_trade(str(current_user.id), trade_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return TradeResponse.model_validate(trade)
+
+
 @router.get(
     "/",
     response_model=list[TradeResponse],

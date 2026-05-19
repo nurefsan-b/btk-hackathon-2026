@@ -4,6 +4,7 @@ import { PortfolioOverview } from '../components/portfolio/portfolio-overview';
 import { AIPerformanceCard } from '../components/portfolio/ai-performance-card';
 import { AIAgentAdvisor } from '../components/ai-agent-advisor';
 import { AssetAllocationChart } from '../components/portfolio/asset-allocation-chart';
+import { QuickSellCard } from '../components/portfolio/quick-sell-card';
 import { ActiveHoldingsTable } from '../components/portfolio/active-holdings-table';
 import { ConnectionBanner } from '../components/connection-banner';
 import { useRequireAuth } from '../lib/use-require-auth';
@@ -66,8 +67,8 @@ export function Portfolio() {
 
     // ─── Data Mapping ──────────────────────────────────────────
 
-    const visibleTrades = trades.filter(t => ['pending', 'paper', 'executed', 'simulated'].includes(t.status));
-    const activeTrades = trades.filter(t => ['paper', 'executed', 'simulated'].includes(t.status));
+    const visibleTrades = trades.filter(t => ['pending', 'paper', 'executed', 'simulated', 'manual_approval_required'].includes(t.status));
+    const activeTrades = trades.filter(t => ['paper', 'executed', 'simulated', 'manual_approval_required'].includes(t.status));
     const reservedWithoutTrade = Math.max(
         (savings?.total_invested || 0) - visibleTrades.reduce((acc, t) => acc + t.amount_invested, 0),
         0,
@@ -195,6 +196,8 @@ export function Portfolio() {
                 />
 
                 <PortfolioOverview data={portfolioOverviewData} />
+
+                <QuickSellCard holdings={activeHoldingsMapped} onSellComplete={loadData} />
 
                 <AIPerformanceCard decisions={aiDecisionsMapped} />
 

@@ -360,6 +360,12 @@ export function createPaperTrade(payload: {
   });
 }
 
+export function sellTrade(tradeId: string) {
+  return request<TradeResponse>(`/trades/${tradeId}/sell`, {
+    method: "POST",
+  });
+}
+
 export function changePassword(currentPassword: string, newPassword: string) {
   return request<{ message: string }>("/users/me/change-password", {
     method: "POST",

@@ -23,6 +23,7 @@ class TradeStatus(StrEnum):
     EXECUTED = "executed"
     FAILED = "failed"
     SIMULATED = "simulated"
+    CLOSED = "closed"
 
 
 class Trade(Base):
@@ -58,5 +59,8 @@ class Trade(Base):
         default=lambda: datetime.now(UTC),
     )
     executed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    closed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

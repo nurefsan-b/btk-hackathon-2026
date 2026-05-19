@@ -175,6 +175,28 @@ class TradingService:
         await self._mark_paper_trades_to_market(trades)
         return trades
 
+    async def sell_user_trade(self, user_id: str, trade_id: str) -> Trade:
+        import uuid
+        try:
+            tid = uuid.UUID(trade_id)
+        except ValueError:
+            raise ValueError("Invalid trade ID format")
+
+        trade = await self._trade_repo.get(tid)
+        if not trade:
+            raise ValueError("Trade not found")
+        if trade.user_id != user_id:
+            raise ValueError("Trade not found")
+        if trade.status not in {TradeStatus.PAPER, TradeStatus.EXECUTED, TradeStatus.SIMULATED}:
+            raise ValueError("Only active trades can be sold")
+
+        # Mark as closed
+        trade.status = TradeStatus.CLOSED
+        trade.closed_at = datetime.now(UTC)
+        await self._session.commit()
+        await self._session.refresh(trade)
+        return trade
+
     @staticmethod
     def _execution_status() -> TradeStatus:
         if settings.paper_trading_enabled:
