@@ -183,7 +183,8 @@ def _recommended_asset(
 def _recommended_action(amount: float, sentiment: int) -> str:
     if amount < 100:
         return "hold"
-    if sentiment < 42:
+    # Only hold on extremely negative sentiment (below 5), otherwise buy
+    if sentiment < 5:
         return "hold"
     return "buy"
 
