@@ -8,8 +8,8 @@ interface DemoPanelProps {
 
 export function DemoPanel({ onSimulate }: DemoPanelProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const [transactionName, setTransactionName] = useState('Starbucks - Coffee');
-    const [amount, setAmount] = useState('135.00');
+    const [transactionName, setTransactionName] = useState('');
+    const [amount, setAmount] = useState('');
 
     const handleSimulate = () => {
         const parsedAmount = parseFloat(amount);
@@ -50,7 +50,7 @@ export function DemoPanel({ onSimulate }: DemoPanelProps) {
                                     type="text"
                                     value={transactionName}
                                     onChange={(e) => setTransactionName(e.target.value)}
-                                    placeholder="e.g., Starbucks - Coffee"
+                                    placeholder="e.g., Coffee, Market, Netflix"
                                     className="w-full bg-input-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all"
                                 />
                             </div>
@@ -63,7 +63,7 @@ export function DemoPanel({ onSimulate }: DemoPanelProps) {
                                     type="number"
                                     value={amount}
                                     onChange={(e) => setAmount(e.target.value)}
-                                    placeholder="e.g., 135.00"
+                                    placeholder="0.00"
                                     step="0.01"
                                     min="0"
                                     className="w-full bg-input-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all"
