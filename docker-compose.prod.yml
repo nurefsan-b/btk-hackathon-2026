@@ -1,0 +1,152 @@
+services:
+  # Production-oriented compose: only Traefik publishes public ports.
+  # Database, Redis, and Flower stay on the private Docker network.
+  traefik:
+    image: traefik:v2.11
+    container_name: btk_traefik_prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+    command:
+      - "--providers.docker.version=1.41"
+      - "--providers.docker.network=btk_net"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+    networks:
+      - btk_net
+
+  db:
+    image: postgres:16-alpine
+    container_name: btk_db_prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-btk_hackathon}
+      POSTGRES_USER: ${POSTGRES_USER:-btk_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-btk_user} -d ${POSTGRES_DB:-btk_hackathon}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - btk_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: btk_redis_prod
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - btk_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: btk_backend_prod
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`${BACKEND_HOST:-api.localhost}`)"
+      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+      - "traefik.docker.network=btk_net"
+    networks:
+      - btk_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: btk_frontend_prod
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${FRONTEND_HOST:-frontend.localhost}`) || Host(`${FRONTEND_ALT_HOST:-localhost}`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.services.frontend.loadbalancer.server.port=5173"
+      - "traefik.docker.network=btk_net"
+    networks:
+      - btk_net
+
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: btk_celery_worker_prod
+    restart: unless-stopped
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=4
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - btk_net
+
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: btk_celery_beat_prod
+    restart: unless-stopped
+    command: celery -A app.worker.celery_app beat --loglevel=info --scheduler redbeat.RedBeatScheduler
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - btk_net
+
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: btk_flower_prod
+    restart: unless-stopped
+    command: celery -A app.worker.celery_app flower --port=5555
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - btk_net
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  btk_net:
+    driver: bridge
